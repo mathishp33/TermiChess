@@ -24,7 +24,7 @@ class Aplication():
 
         # do stuff
         #
-        self.drawing(a)
+        self.drawing(50)
 
         pg.display.flip()
         pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps(), 1)))
