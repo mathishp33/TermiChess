@@ -15,6 +15,7 @@ class Aplication():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
+                pg.quit()
             if pg.mouse.get_pressed()[0]:
                 self.clicking = True
             else: 
@@ -26,4 +27,8 @@ class Aplication():
         pg.display.set_caption(str(round(self.clock.get_fps(), 3)))
         self.clock.tick(self.FPS)
 
-        
+
+if __name__ == '__main__':
+    main = Aplication()
+    while main.running:
+        main.update()
