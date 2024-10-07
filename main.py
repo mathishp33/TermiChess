@@ -11,6 +11,7 @@ class Aplication():
         self.clicking = False
 
     def update(self):
+        self.screen.fill((0, 0, 0))
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
@@ -18,3 +19,11 @@ class Aplication():
                 self.clicking = True
             else: 
                 self.clicking = False
+
+        # do stuff
+        #
+        #
+        pg.display.set_caption(str(round(self.clock.get_fps(), 3)))
+        self.clock.tick(self.FPS)
+
+        
