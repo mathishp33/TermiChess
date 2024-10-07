@@ -24,10 +24,17 @@ class Aplication():
 
         # do stuff
         #
-        #
+        self.drawing(a)
+
         pg.display.flip()
         pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps(), 1)))
         self.clock.tick(self.FPS)
+    
+    def drawing(self, a):
+        for i in range(self.WIDTH//(a*2)):
+            for j in range(self.HEIGHT//(a)):
+                pg.draw.rect(self.screen, (0, 0, 0), pg.Rect(i*a, j*a, a, a))
+                pg.draw.rect(self.screen, (255, 255, 255), pg.Rect(i*a +a, j*a, a, a))
 
 
 if __name__ == '__main__':
