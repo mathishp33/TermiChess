@@ -1,2 +1,2 @@
-# Noah-Mathis-Chess-Bot
+# Termichess
 A chess bot made by Mathis and Noah
