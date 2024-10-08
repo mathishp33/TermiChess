@@ -21,6 +21,14 @@ class Game():
                       [[0], [0], [0], [0], [0], [0], [0], [0]],
                       [[6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0]],
                       [[5, 0], [4, 0], [3, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]]]
+        self.turn = 'Player'
+        self.K_moves = [(0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1), (1, 0), (-1, 0)]
+        self.Q_moves = [8, 8, 8, 8, 8, 8]
+        self.B_moves = []
+    def turn(self):
+        
+        
+        self.turn = 'Bot'
         
 
 class Pieces():
@@ -34,6 +42,7 @@ class Pieces():
                     name_of = self.pieces_index[self.board.board[i][j][0]+self.board.board[i][j][1]*2-1]
                     item = [j, i,pg.image.load(('ressources\\' + name_of + '.png'))]
                     self.pieces.append(item)
-        print(self.pieces)
+        self.board.turn()
+        
         
             
