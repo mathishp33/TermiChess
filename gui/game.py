@@ -37,6 +37,10 @@ class Game():
             BLACK | ROOK: pg.image.load(f"{prefix}black_5.png"),
             BLACK | PAWN: pg.image.load(f"{prefix}black_6.png"),
         }
+
+        for key in self.pieces_tex.keys():
+            if key != 0:
+               self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
         
 
             
