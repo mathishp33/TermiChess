@@ -22,30 +22,28 @@ def loop(screen):
     cmd_pad.refresh(0, 0, rows-2, 0, rows-1, cols)
 
     while True:
+        screen.noutrefresh()
         try:
             key = screen.getkey()
         except:
             key = ""
         if "KEY" in key:
             if key == "KEY_RIGHT":
-                screen.move(0, 1)
                 cursor[1] += 1
             elif key == "KEY_LEFT":
-                screen.move(0, -1)
                 cursor[1] -= 1
             elif key == "KEY_UP":
-                screen.move(-1, 0)
                 cursor[0] -= 1
             elif key == "KEY_DOWN":
-                screen.move(1, 0)
                 cursor[0] += 1
+            screen.move(cursor[0], cursor[1])
             curses.setsyx(cursor[0], cursor[1])
         elif key != "":
             if focus == "CMD":
-                #cmd_pad.addstr(cursor[0], cursor[1], key)
+                cmd_pad.addstr(key)
                 pass
+        curses.doupdate()
 
-        screen.refresh()
 
 
 
