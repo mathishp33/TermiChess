@@ -1,6 +1,6 @@
 import pygame as pg
 import numpy as np
-
+import gui.game as game
 
 class Aplication():
     def __init__(self):
@@ -11,6 +11,7 @@ class Aplication():
         self.FPS = 120
         self.running = True
         self.clicking = False
+        self.game = game.Pieces()
 
     def update(self):
         self.screen.fill((0, 0, 0))
@@ -24,7 +25,6 @@ class Aplication():
                 self.clicking = False
 
         # do stuff
-        #
         self.drawing(50)
 
         pg.display.flip()
@@ -40,3 +40,7 @@ class Aplication():
                 else:
                     pg.draw.rect(self.screen, (255, 255, 255), pg.Rect(i * a, j * a, a, a))
                     pg.draw.rect(self.screen, (0, 0, 0), pg.Rect(i * a, j * a + a, a, a))
+                    
+        for i in self.game.pieces:
+            idle = i[2].get_rect(center=(i[0], i[1]))
+            self.screen.blit(i[2], idle)
