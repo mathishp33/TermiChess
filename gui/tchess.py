@@ -33,8 +33,11 @@ class Aplication():
     def render(self):
         col = ((237, 212, 175), (170, 125, 92))
         sqrSize = self.game.boardSize/8
-        for x in range(8):
-            for y in range(8):
+        for y in range(8):
+            for x in range(8):
+                current_piece = self.game.board[8*y+x]
                 pg.draw.rect(self.screen, col[(x+y)%2], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+                if current_piece != 0:
+                    self.screen.blit(self.game.pieces_tex[current_piece], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
             
 
