@@ -40,5 +40,5 @@ class Aplication():
                 pg.draw.rect(self.screen, colors[(i+j)%2], pg.Rect(self.size*i, self.size*j, self.size, self.size))
                 
         for i in self.game.pieces:
-            idle = i[2].get_rect(center=(i[0]*self.size/2+self.size/2, i[1]*self.size/2+self.size/2))
+            idle = i[2].get_rect(center=(i[0]*self.size+self.size/2, i[1]*self.size+self.size/2))
             self.screen.blit(i[2], idle)
