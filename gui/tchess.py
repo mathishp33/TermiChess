@@ -1,5 +1,4 @@
 import pygame as pg
-import numpy as np
 import gui.game as game
 
 class Aplication():
@@ -11,7 +10,7 @@ class Aplication():
         self.FPS = 120
         self.running = True
         self.clicking = False
-        self.game = game.Pieces()
+        self.game = game.Game()
 
     def update(self):
         self.screen.fill((0, 0, 0))
@@ -25,22 +24,17 @@ class Aplication():
                 self.clicking = False
 
         # do stuff
-        self.drawing(50)
+        self.render()
 
         pg.display.flip()
         pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps(), 1)))
         self.clock.tick(self.FPS)
 
-    def drawing(self, a):
-        for i in range(0, self.WIDTH // (a), 2):
-            for j in range(0, self.HEIGHT // (a), 1):
-                if j // 2 == j / 2:
-                    pg.draw.rect(self.screen, (0, 0, 0), pg.Rect(i * a, j * a, a, a))
-                    pg.draw.rect(self.screen, (255, 255, 255), pg.Rect(i * a + a, j * a, a, a))
-                else:
-                    pg.draw.rect(self.screen, (255, 255, 255), pg.Rect(i * a, j * a, a, a))
-                    pg.draw.rect(self.screen, (0, 0, 0), pg.Rect(i * a, j * a + a, a, a))
-                    
-        for i in self.game.pieces:
-            idle = i[2].get_rect(center=(i[0], i[1]))
-            self.screen.blit(i[2], idle)
+    def render(self):
+        col = ((237, 212, 175), (170, 125, 92))
+        sqrSize = self.game.boardSize/8
+        for x in range(8):
+            for y in range(8):
+                pg.draw.rect(self.screen, col[(x+y)%2], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+            
+
