@@ -1,5 +1,3 @@
-import gui.tchess as gui
-import terminal.tchess as terminal
 
 
 '''
@@ -11,9 +9,11 @@ MODE = "GUI"
 
 if __name__ == '__main__':
     if MODE == "GUI":
+        import gui.tchess as gui
         main = gui.Aplication()
         while main.running:
             main.update()
 
     elif MODE == "TERMINAL":
+        import terminal.tchess as terminal
         terminal.main()
