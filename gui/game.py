@@ -1,6 +1,25 @@
 import pygame as pg
 import platform
 
+
+'''
+The system used is a 5-bit encoding, with the first 2 bits representing the team of the piece.
+    WHITE = 0b10000
+    BLACK = 0b01000
+
+The last 3 bits represent the type of piece.
+    KING   = 0b00001
+    QUEEN  = 0b00010
+    BISHOP = 0b00011
+    KNIGHT = 0b00100
+    ROOK   = 0b00101
+    PAWN   = 0b00111
+
+If we want a white rook for example, we do a bitwise OR operation.
+Example: WHITE | ROOK = 16 | 5
+                      = 0b10101
+
+'''
 WHITE = 16
 BLACK = 8
 

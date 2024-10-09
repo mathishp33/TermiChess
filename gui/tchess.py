@@ -1,5 +1,7 @@
 import pygame as pg
 import gui.game as game
+import gui.events.event as event
+from gui.events.mouse_events import *
 
 class Aplication():
     def __init__(self):
@@ -11,6 +13,14 @@ class Aplication():
         self.running = True
         self.clicking = False
         self.game = game.Game()
+        self.mouseState = [False, False, False]
+        self.dragState = {"x": 0, "y": 0, "piece": 0, "offsetX": 0, "offsetY": 0}
+
+    def get_piece_at(self, x: int, y: int):
+        x /= 64
+        y /= 64
+        return self.game.board[8*y+x]
+
 
     def update(self):
         self.screen.fill((0, 0, 0))
@@ -18,10 +28,18 @@ class Aplication():
             if event.type == pg.QUIT:
                 self.running = False
                 exit()
-            if pg.mouse.get_pressed()[0]:
-                self.clicking = True
-            else:
-                self.clicking = False
+            
+            c = pg.mouse.get_pressed()
+            for i in range(3):
+                if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
+                    if c[i]:
+                        ClickEvent.call()
+                        print(self.get_piece_at(pg.mouse.get_pos()[0], pg.mouse.get_pos([1])))
+                    else:
+                        ReleaseEvent.call()
+                else:
+                    DragEvent.call()
+                self.mouseState = c
 
         # do stuff
         self.render()
