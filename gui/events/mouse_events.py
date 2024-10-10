@@ -9,7 +9,10 @@ class MouseEvent(Event):
 
     def call(self):
         for listener in MouseEvent.listeners:
-            listener(self.mouseX, self.mouseY, self.mouseButton)
+            if type(listener) == list:
+                listener[0](listener[1], self.mouseX, self.mouseY, self.mouseButton)
+            else:
+                listener(self.mouseX, self.mouseY, self.mouseButton)
         
 
 class ClickEvent(MouseEvent):
@@ -27,4 +30,7 @@ class DragEvent(MouseEvent):
 
     def call(self):
         for listener in DragEvent.listeners:
-            listener(self.mouseX, self.mouseY, self.mouseButton, self.piece)
+            if type(listener) == list:
+                listener[0](listener[1], self.mouseX, self.mouseY, self.mouseButton, self.piece)
+            else:
+                listener(self.mouseX, self.mouseY, self.mouseButton, self.piece)

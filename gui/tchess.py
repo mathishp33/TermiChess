@@ -13,14 +13,21 @@ class Aplication():
         self.running = True
         self.clicking = False
         self.game = game.Game()
-        self.mouseState = [False, False, False]
+        self.mouseState = [False, False, False, (0, 0)]
         self.dragState = {"x": 0, "y": 0, "piece": 0, "offsetX": 0, "offsetY": 0}
+        ClickEvent.addListener(self.onStartDrag, self)
 
-    def get_piece_at(self, x: int, y: int):
-        x = int(x/64)
-        y = int(y/64)
-        return self.game.board[8*y+x]
+    def get_piece_at(self, pos: tuple[int, int]):
+        x = int(pos[0]/64)
+        y = int(pos[1]/64)
+        i = 8*y+x
+        return self.game.board[i] if i >= 0 and i <= 63 else None
 
+    def onStartDrag(self, mouseX: int, mouseY: int, mouseButton: int, piece: int):
+        self.dragState["x"] = mouseX
+        self.dragState["y"] = mouseY
+        self.dragState["piece"] = piece
+        print("cacadrag")
 
     def update(self):
         self.screen.fill((0, 0, 0))
@@ -30,15 +37,16 @@ class Aplication():
                 exit()
             
             c = pg.mouse.get_pressed()
+            piece = self.get_piece_at(pg.mouse.get_pos())
             for i in range(3):
                 if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
+                    self.mouseState[i] = c[i]
                     if c[i]:
-                        ClickEvent.call()
+                        ClickEvent(self.mouseState[3][0], self.mouseState[3][1], i).call()
                     else:
-                        ReleaseEvent.call()
-                else:
-                    DragEvent.call()
-                self.mouseState = c
+                        ReleaseEvent(self.mouseState[3][0], self.mouseState[3][1], i).call()
+                elif c[i]:
+                    DragEvent(piece, self.mouseState[3][0], self.mouseState[3][1], i).call()
 
         # do stuff
         self.render()
