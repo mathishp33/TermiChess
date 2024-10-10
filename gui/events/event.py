@@ -1,10 +1,10 @@
 class Event:
-    listeners: list[function] = []
+    listeners: list = []
 
-    def call():
+    def call(self):
         for listener in Event.listeners:
             listener()
     
-    def addListener(func: function):
+    def addListener(func):
         Event.listeners.append(func)
 

@@ -18,7 +18,6 @@ The last 3 bits represent the type of piece.
 If we want a white rook for example, we do a bitwise OR operation.
 Example: WHITE | ROOK = 16 | 5
                       = 0b10101
-
 '''
 WHITE = 16
 BLACK = 8

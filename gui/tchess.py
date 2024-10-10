@@ -17,8 +17,8 @@ class Aplication():
         self.dragState = {"x": 0, "y": 0, "piece": 0, "offsetX": 0, "offsetY": 0}
 
     def get_piece_at(self, x: int, y: int):
-        x /= 64
-        y /= 64
+        x = int(x/64)
+        y = int(y/64)
         return self.game.board[8*y+x]
 
 
@@ -34,7 +34,6 @@ class Aplication():
                 if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
                     if c[i]:
                         ClickEvent.call()
-                        print(self.get_piece_at(pg.mouse.get_pos()[0], pg.mouse.get_pos([1])))
                     else:
                         ReleaseEvent.call()
                 else:

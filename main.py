@@ -1,5 +1,3 @@
-
-
 '''
 Change the variable MODE to test either the GUI mode or the Terminal mode.
 Note that Terminal mode is currently not working well.
