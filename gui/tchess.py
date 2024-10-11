@@ -5,7 +5,8 @@ from gui.events.mouse_events import *
 
 class Aplication():
     def __init__(self):
-        self.RES = self.WIDTH, self.HEIGHT = 800, 800
+        self.size = 64
+        self.RES = self.WIDTH, self.HEIGHT = self.size*8, self.size*8
         self.screen = pg.display.set_mode(self.RES)
         self.clock = pg.time.Clock()
         pg.init()
@@ -30,6 +31,7 @@ class Aplication():
         print("cacadrag")
 
     def update(self):
+        self.mouse_pos = pg.mouse.get_pos()
         self.screen.fill((0, 0, 0))
         for event in pg.event.get():
             if event.type == pg.QUIT:
