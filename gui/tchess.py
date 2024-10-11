@@ -1,5 +1,4 @@
 import pygame as pg
-import numpy as np
 import gui.game as game
 
 class Aplication():
@@ -12,19 +11,41 @@ class Aplication():
         self.FPS = 120
         self.running = True
         self.clicking = False
+        self.mouse_pos = (0, 0)
         self.game = game.Pieces()
+        self.select = (0, 0)
 
     def update(self):
+        self.mouse_pos = pg.mouse.get_pos()
         self.screen.fill((0, 0, 0))
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
                 exit()
                 pg.quit()
-            if pg.mouse.get_pressed()[0]:
-                self.clicking = True
-            else:
-                self.clicking = False
+        if pg.mouse.get_pressed()[0]:
+            self.clicking = True
+        else:
+            self.clicking = False 
+        if self.clicking:
+            for i in self.game.pieces:
+                idle = pg.Rect(i[0]*self.size, i[1]*self.size, self.size, self.size)
+                if idle.collidepoint(self.mouse_pos):
+                    self.select = (i[0]*self.size, i[1]*self.size)
+                    moves = self.game.board.moves[str(i[3])]
+                    for j in moves[0]:
+                        if moves[1] == 1:
+                            for k in range(moves[2], 0, -1): 
+                                pg.draw.circle(self.screen, (255, 255, 255), (self.select[0]+k*self.size, self.select[1]+k*self.size), 20)
+                                pg.display.update(pg.draw.circle(self.screen, (255, 255, 255), (self.select), 20))
+                                print(self.select[0]+k, self.select[1]+k)
+                    while True:
+                        self.mouse_pos = pg.mouse.get_pos()
+                        for event in pg.event.get():
+                            if event.type == pg.QUIT:
+                                pg.quit()
+                    
+
 
         # do stuff
         self.drawing(50)
