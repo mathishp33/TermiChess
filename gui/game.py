@@ -22,9 +22,10 @@ class Game():
                       [[6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0]],
                       [[5, 0], [4, 0], [3, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]]]
         self.turn = 'Player'
-        self.K_moves = [(0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1), (1, 0), (-1, 0)]
-        self.Q_moves = [(0, 8), (0, -8), (8, 8), (-8, -8), (8, -8), (-8, 8), (8, 0), (-8, 0)]
-        self.B_moves = [(3, 1), (3, -1), (-3, 1), (-3, -1), (1, -3), (-1, -3), (1, 3), (-1, 3)]
+        self.moves = {'1' : ([(0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1), (1, 0), (-1, 0)], 1, 1),
+                      '2' : ([(0, 8), (0, -8), (8, 8), (-8, -8), (8, -8), (-8, 8), (8, 0), (-8, 0)], 1, 8),
+                      '3' : ([(3, 1), (3, -1), (-3, 1), (-3, -1), (1, -3), (-1, -3), (1, 3), (-1, 3)], 2, 0)
+                      }
     def next_turn(self):
         
         
@@ -40,7 +41,7 @@ class Pieces():
             for j in range(8):
                 if not self.board.board[i][j] == [0]:
                     name_of = self.pieces_index[self.board.board[i][j][0]*2-self.board.board[i][j][1]-1]
-                    item = [j, i,pg.image.load(('ressources\\' + name_of + '.png'))]
+                    item = [j, i,pg.image.load(('ressources\\' + name_of + '.png')), self.board.board[i][j][0]]
                     self.pieces.append(item)
         self.board.next_turn()
         
