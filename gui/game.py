@@ -59,6 +59,3 @@ class Game():
         for key in self.pieces_tex.keys():
             if key != 0:
                self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
-        
-
-            
