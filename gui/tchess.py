@@ -24,8 +24,7 @@ class Application():
             (0, 0), # Mouse position    #3
             False, # is dragging ?      #4
             ]
-        self.dragState = {"x": 0, "y": 0, "piece": 0, "offsetX": 0, "offsetY": 0}
-        EventDispatcher.add_listener(MouseDragEvent, self.onDrag)
+        self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0}
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -37,9 +36,6 @@ class Application():
         x = int(pos[0]/64)
         y = int(pos[1]/64)
         return (x, y)
-
-    def onDrag(self, event: MouseDragEvent):
-        self.mouseState
 
     def update(self):
         self.screen.fill((0, 0, 0))
@@ -73,23 +69,39 @@ class Application():
         sqrSize = self.game.boardSize/8
         for y in range(8):
             for x in range(8):
-                current_piece = self.game.board[8*y+x]
+                index = 8*y+x
+                current_piece = self.game.board[index]
                 pg.draw.rect(self.screen, col[(x+y)%2], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
                 if current_piece != 0:
-                    self.screen.blit(self.game.pieces_tex[current_piece], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+                    if self.mouseState[4]:
+                        if index != self.dragState["index"]:
+                            self.screen.blit(self.game.pieces_tex[current_piece], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+                    else:
+                        self.screen.blit(self.game.pieces_tex[current_piece], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+
+        if self.mouseState[4]:
+            self.screen.blit(self.game.pieces_tex[self.dragState["piece"]], pg.Rect(self.mouseState[3][0]+self.dragState["offsetX"]-sqrSize/2, self.mouseState[3][1]+self.dragState["offsetY"]-sqrSize/2, sqrSize/2, sqrSize/2))
 
 
 @event_listener
-def startDrag(event: MouseClickEvent):
+def onStartDrag(event: MouseClickEvent):
     piece = Application.current.get_piece_at((event.mouseX, event.mouseY))
     squareX, squareY = Application.get_square_at((event.mouseX, event.mouseY))
     if piece != 0:
         Application.current.mouseState[4] = True
-        Application.current.dragState["x"] = event.mouseX
-        Application.current.dragState["y"] = event.mouseY
         Application.current.dragState["piece"] = piece
         Application.current.dragState["offsetX"] = 64 * (squareX + 0.5) - event.mouseX
         Application.current.dragState["offsetY"] = 64 * (squareY + 0.5) - event.mouseY
+        Application.current.dragState["index"] = 8 * squareY + squareX
+        print(Application.current.dragState["index"])
     else:
         Application.current.mouseState[4] = False
     print(Application.current.dragState)
+
+@event_listener
+def onEndDrag(event: MouseReleaseEvent):
+    Application.current.mouseState[4] = False
+
+@event_listener
+def onDrag(event: MouseDragEvent):
+    pass
