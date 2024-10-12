@@ -1,7 +1,10 @@
 import pygame as pg
-import gui.game as game
+import chess.game as game
+from chess.move import *
 import gui.events.event as event
 from gui.events.mouse_events import *
+from gui.events.keyboard_events import *
+import chess.utils as utils
 
 
 class Application():
@@ -24,7 +27,7 @@ class Application():
             (0, 0), # Mouse position    #3
             False, # is dragging ?      #4
             ]
-        self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0}
+        self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -44,18 +47,25 @@ class Application():
                 self.running = False
                 exit()
             
-            c = pg.mouse.get_pressed()
-            piece = self.get_piece_at(pg.mouse.get_pos())
-            self.mouseState[3] = pg.mouse.get_pos()
-            for i in range(3):
-                if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
-                    self.mouseState[i] = c[i]
-                    if c[i]:
-                        EventDispatcher.call_event(MouseClickEvent(self.mouseState[3][0], self.mouseState[3][1], i))
-                    else:
-                        EventDispatcher.call_event(MouseReleaseEvent(self.mouseState[3][0], self.mouseState[3][1], i))
-                if c[i] and self.mouseState[4]:
-                    EventDispatcher.call_event(MouseDragEvent(piece, self.mouseState[3][0], self.mouseState[3][1], i))
+            if event.type in [pg.MOUSEBUTTONUP, pg.MOUSEBUTTONDOWN, pg.MOUSEMOTION, pg.MOUSEWHEEL]:
+                c = pg.mouse.get_pressed()
+                piece = self.get_piece_at(pg.mouse.get_pos())
+                self.mouseState[3] = pg.mouse.get_pos()
+                for i in range(3):
+                    if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
+                        self.mouseState[i] = c[i]
+                        if c[i]:
+                            EventDispatcher.call_event(MouseClickEvent(self.mouseState[3][0], self.mouseState[3][1], i))
+                        else:
+                            EventDispatcher.call_event(MouseReleaseEvent(self.mouseState[3][0], self.mouseState[3][1], i))
+                    if c[i] and self.mouseState[4]:
+                        EventDispatcher.call_event(MouseDragEvent(piece, self.mouseState[3][0], self.mouseState[3][1], i))
+                continue
+
+            if event.type == pg.KEYDOWN:
+                EventDispatcher.call_event(KeyPressEvent(event.key))
+            elif event.type == pg.KEYUP:
+                EventDispatcher.call_event(KeyReleaseEvent(event.key))
 
         # do stuff
         self.render()
@@ -93,15 +103,15 @@ def onStartDrag(event: MouseClickEvent):
         Application.current.dragState["offsetX"] = 64 * (squareX + 0.5) - event.mouseX
         Application.current.dragState["offsetY"] = 64 * (squareY + 0.5) - event.mouseY
         Application.current.dragState["index"] = 8 * squareY + squareX
-        print(Application.current.dragState["index"])
+        Application.current.dragState["dragStart"] = (squareX, squareY)
     else:
         Application.current.mouseState[4] = False
-    print(Application.current.dragState)
 
 @event_listener
 def onEndDrag(event: MouseReleaseEvent):
     Application.current.mouseState[4] = False
-
-@event_listener
-def onDrag(event: MouseDragEvent):
-    pass
+    pos = Application.get_square_at((event.mouseX, event.mouseY))
+    move = Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
+    move.do()
+    Application.current.game.current.moves.append(move)
+    Application.current.game.current.move += 1

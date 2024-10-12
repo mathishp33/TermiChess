@@ -37,3 +37,4 @@ def event_listener(func):
     EventDispatcher.add_listener(ann[list(ann.keys())[0]], func)
     def inner(*args, **kwargs):
         return func(args, kwargs)
+    return inner

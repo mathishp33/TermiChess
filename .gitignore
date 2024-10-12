@@ -1,0 +1,5 @@
+chess/__pycache__
+gui/__pycache__/
+gui/events/__pycache__
+terminal/__pycache__
+.idea/
