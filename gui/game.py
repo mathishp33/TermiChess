@@ -1,8 +1,26 @@
 import pygame as pg
-import os
+import platform
 
-WHITE = 0
-BLACK = 1
+
+'''
+The system used is a 5-bit encoding, with the first 2 bits representing the team of the piece.
+    WHITE = 0b10000
+    BLACK = 0b01000
+
+The last 3 bits represent the type of piece.
+    KING   = 0b00001
+    QUEEN  = 0b00010
+    BISHOP = 0b00011
+    KNIGHT = 0b00100
+    ROOK   = 0b00101
+    PAWN   = 0b00111
+
+If we want a white rook for example, we do a bitwise OR operation.
+Example: WHITE | ROOK = 16 | 5
+                      = 0b10101
+'''
+WHITE = 16
+BLACK = 8
 
 KING = 1
 QUEEN = 2
@@ -13,37 +31,31 @@ PAWN = 6
 
 class Game():
     def __init__(self):
-        self.board = [[[5,1], [4,1], [3,1], [2,1], [1,1], [3,1], [4,1], [5,1]],
-                      [[6,1], [6,1], [6,1], [6,1], [6,1], [6,1], [6,1], [6,1]],
-                      [[0], [0], [0], [0], [0], [0], [0], [0]],
-                      [[0], [0], [0], [0], [0], [0], [0], [0]],
-                      [[0], [0], [0], [0], [0], [0], [0], [0]],
-                      [[0], [0], [0], [0], [0], [0], [0], [0]],
-                      [[6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0], [6,0]],
-                      [[5, 0], [4, 0], [3, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]]]
-        self.turn = 'Player'
-        self.moves = {'1' : ([(0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1), (1, 0), (-1, 0)], 1, 1),
-                      '2' : ([(0, 8), (0, -8), (8, 8), (-8, -8), (8, -8), (-8, 8), (8, 0), (-8, 0)], 1, 8),
-                      '3' : ([(3, 1), (3, -1), (-3, 1), (-3, -1), (1, -3), (-1, -3), (1, 3), (-1, 3)], 2, 0)
-                      }
-    def next_turn(self):
-        
-        
-        self.turn = 'Bot'
-        
+        self.boardSize = 512
+        self.board = [0 for i in range(64)]
+        self.board[0] = WHITE | PAWN
+        self.board[5] = BLACK | KING
 
-class Pieces():
-    def __init__(self):
-        self.board = Game()
-        self.pieces_index = ['white_1', 'black_1', 'white_2', 'black_2', 'white_3', 'black_3', 'white_4', 'black_4', 'white_5', 'black_5', 'white_6', 'black_6' ]
-        self.pieces = []
-        for i in range(8):
-            for j in range(8):
-                if not self.board.board[i][j] == [0]:
-                    name_of = self.pieces_index[self.board.board[i][j][0]*2-self.board.board[i][j][1]-1]
-                    item = [j, i,pg.image.load(('ressources\\' + name_of + '.png')), self.board.board[i][j][0]]
-                    self.pieces.append(item)
-        self.board.next_turn()
-        
-        
-            
+        prefix = "resources\\" if platform.system() == "Windows" else "resources/"
+
+        self.pieces_tex = {
+            0: None,
+
+            WHITE | KING: pg.image.load(f"{prefix}white_1.png"),
+            WHITE | QUEEN: pg.image.load(f"{prefix}white_2.png"),
+            WHITE | BISHOP: pg.image.load(f"{prefix}white_3.png"),
+            WHITE | KNIGHT: pg.image.load(f"{prefix}white_4.png"),
+            WHITE | ROOK: pg.image.load(f"{prefix}white_5.png"),
+            WHITE | PAWN: pg.image.load(f"{prefix}white_6.png"),
+
+            BLACK | KING: pg.image.load(f"{prefix}black_1.png"),
+            BLACK | QUEEN: pg.image.load(f"{prefix}black_2.png"),
+            BLACK | BISHOP: pg.image.load(f"{prefix}black_3.png"),
+            BLACK | KNIGHT: pg.image.load(f"{prefix}black_4.png"),
+            BLACK | ROOK: pg.image.load(f"{prefix}black_5.png"),
+            BLACK | PAWN: pg.image.load(f"{prefix}black_6.png"),
+        }
+
+        for key in self.pieces_tex.keys():
+            if key != 0:
+               self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))

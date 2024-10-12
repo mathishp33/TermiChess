@@ -1,8 +1,13 @@
 import pygame as pg
 import gui.game as game
+import gui.events.event as event
+from gui.events.mouse_events import *
 
-class Aplication():
+
+class Application():
+    current = None
     def __init__(self):
+        Application.current = self
         self.size = 64
         self.RES = self.WIDTH, self.HEIGHT = self.size*8, self.size*8
         self.screen = pg.display.set_mode(self.RES)
@@ -11,55 +16,80 @@ class Aplication():
         self.FPS = 120
         self.running = True
         self.clicking = False
-        self.mouse_pos = (0, 0)
-        self.game = game.Pieces()
-        self.select = (0, 0)
+        self.game = game.Game()
+        self.mouseState = [
+            False, # Left-click state   #0
+            False, # Right-click state  #1
+            False, # Middle-click state #2
+            (0, 0), # Mouse position    #3
+            False, # is dragging ?      #4
+            ]
+        self.dragState = {"x": 0, "y": 0, "piece": 0, "offsetX": 0, "offsetY": 0}
+        EventDispatcher.add_listener(MouseDragEvent, self.onDrag)
+
+    def get_piece_at(self, pos: tuple[int, int]):
+        x = int(pos[0]/64)
+        y = int(pos[1]/64)
+        i = 8*y+x
+        return self.game.board[i] if i >= 0 and i <= 63 else None
+    
+    def get_square_at(pos: tuple[int, int]):
+        x = int(pos[0]/64)
+        y = int(pos[1]/64)
+        return (x, y)
+
+    def onDrag(self, event: MouseDragEvent):
+        self.mouseState
 
     def update(self):
-        self.mouse_pos = pg.mouse.get_pos()
         self.screen.fill((0, 0, 0))
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
                 exit()
-                pg.quit()
-        if pg.mouse.get_pressed()[0]:
-            self.clicking = True
-        else:
-            self.clicking = False 
-        if self.clicking:
-            for i in self.game.pieces:
-                idle = pg.Rect(i[0]*self.size, i[1]*self.size, self.size, self.size)
-                if idle.collidepoint(self.mouse_pos):
-                    self.select = (i[0]*self.size, i[1]*self.size)
-                    moves = self.game.board.moves[str(i[3])]
-                    for j in moves[0]:
-                        if moves[1] == 1:
-                            for k in range(moves[2], 0, -1): 
-                                pg.draw.circle(self.screen, (255, 255, 255), (self.select[0]+k*self.size, self.select[1]+k*self.size), 20)
-                                pg.display.update(pg.draw.circle(self.screen, (255, 255, 255), (self.select), 20))
-                                print(self.select[0]+k, self.select[1]+k)
-                    while True:
-                        self.mouse_pos = pg.mouse.get_pos()
-                        for event in pg.event.get():
-                            if event.type == pg.QUIT:
-                                pg.quit()
-                    
-
+            
+            c = pg.mouse.get_pressed()
+            piece = self.get_piece_at(pg.mouse.get_pos())
+            self.mouseState[3] = pg.mouse.get_pos()
+            for i in range(3):
+                if self.mouseState[i] != c[i]: # If the button state is not the same as the one registered last frame, call an event.
+                    self.mouseState[i] = c[i]
+                    if c[i]:
+                        EventDispatcher.call_event(MouseClickEvent(self.mouseState[3][0], self.mouseState[3][1], i))
+                    else:
+                        EventDispatcher.call_event(MouseReleaseEvent(self.mouseState[3][0], self.mouseState[3][1], i))
+                if c[i] and self.mouseState[4]:
+                    EventDispatcher.call_event(MouseDragEvent(piece, self.mouseState[3][0], self.mouseState[3][1], i))
 
         # do stuff
-        self.drawing(50)
+        self.render()
 
         pg.display.flip()
         pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps(), 1)))
         self.clock.tick(self.FPS)
 
-    def drawing(self, a):
-        colors = ((237, 212, 175), (170, 125, 92))
-        for i in range(8):
-            for j in range(8):
-                pg.draw.rect(self.screen, colors[(i+j)%2], pg.Rect(self.size*i, self.size*j, self.size, self.size))
-                
-        for i in self.game.pieces:
-            idle = i[2].get_rect(center=(i[0]*self.size+self.size/2, i[1]*self.size+self.size/2))
-            self.screen.blit(i[2], idle)
+    def render(self):
+        col = ((237, 212, 175), (170, 125, 92))
+        sqrSize = self.game.boardSize/8
+        for y in range(8):
+            for x in range(8):
+                current_piece = self.game.board[8*y+x]
+                pg.draw.rect(self.screen, col[(x+y)%2], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+                if current_piece != 0:
+                    self.screen.blit(self.game.pieces_tex[current_piece], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+
+
+@event_listener
+def startDrag(event: MouseClickEvent):
+    piece = Application.current.get_piece_at((event.mouseX, event.mouseY))
+    squareX, squareY = Application.get_square_at((event.mouseX, event.mouseY))
+    if piece != 0:
+        Application.current.mouseState[4] = True
+        Application.current.dragState["x"] = event.mouseX
+        Application.current.dragState["y"] = event.mouseY
+        Application.current.dragState["piece"] = piece
+        Application.current.dragState["offsetX"] = 64 * (squareX + 0.5) - event.mouseX
+        Application.current.dragState["offsetY"] = 64 * (squareY + 0.5) - event.mouseY
+    else:
+        Application.current.mouseState[4] = False
+    print(Application.current.dragState)
