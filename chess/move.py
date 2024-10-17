@@ -1,4 +1,5 @@
 import chess.game as game
+import pygame as pg
 
 class Move:
     def __init__(self, ibefore: int, iafter: int, eaten_piece: int = 0, eaten_i = -1, castle: int = -1, en_passant: bool = False):
@@ -21,6 +22,10 @@ class Move:
 
         game.Game.current.board[self.start] = 0
         game.Game.current.board[self.end] = self.piece
+        if self.eaten_piece != 0:
+            pg.mixer.Sound.play(game.Game.current.sounds["capture"])
+        else:
+            pg.mixer.Sound.play(game.Game.current.sounds["move"])
 
     def undo(self):
         if self.castle >= 0:
@@ -28,3 +33,4 @@ class Move:
         game.Game.current.board[self.start] = self.piece
         game.Game.current.board[self.end] = 0
         game.Game.current.board[self.eaten_i] = self.eaten_piece
+        pg.mixer.Sound.play(game.Game.current.sounds["move"])

@@ -111,7 +111,8 @@ def onStartDrag(event: MouseClickEvent):
 def onEndDrag(event: MouseReleaseEvent):
     Application.current.mouseState[4] = False
     pos = Application.get_square_at((event.mouseX, event.mouseY))
-    move = Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
-    move.do()
-    Application.current.game.current.moves.append(move)
-    Application.current.game.current.move += 1
+    if Application.current.dragState["dragStart"] != pos:
+        move = Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
+        move.do()
+        Application.current.game.current.moves.append(move)
+        Application.current.game.current.move += 1
