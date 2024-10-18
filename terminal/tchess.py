@@ -9,9 +9,15 @@ class TerminalApp():
         self.screen.clear()
         curses.start_color()
 
-        curses.init_pair(18, 0, 7)
+        curses.init_pair(18, 0, 7) 
         curses.init_pair(28, 1, 7)
-        curses.init_pair(21, 1, 0)
+        curses.init_pair(21, 1, 0) # RED
+        curses.init_pair(31, 2, 0) # GREEN
+        curses.init_pair(41, 3, 0) # YELLOW
+        curses.init_pair(51, 4, 0) # BLUE
+        curses.init_pair(61, 5, 0) # PURPLE
+        curses.init_pair(71, 6, 0) # AQUA
+        curses.init_pair(81, 7, 0) # WHITE
 
         self.rows, self.cols = screen.getmaxyx()
         self.cursor = [self.rows-1, 2]
@@ -23,7 +29,7 @@ class TerminalApp():
         self.render_pad = curses.newpad(self.rows - 2, self.cols)
         self.cmd_pad = curses.newpad(2, self.cols)
 
-        self._print(self._get_centered_text(" Tchess "), False)
+        self._print(self._get_centered_text(" Tchess "), False, curses.color_pair(71))
         self._print(self._get_centered_text(" An interactive terminal application specialized for chess "), False)
         self._print("–"*self.cols)
 
@@ -126,8 +132,9 @@ class TerminalApp():
 
         self._refresh((0, 0, 1))
 
-    def _print(self, msg: str, refresh: bool = True):
-        self.output.append(msg)
+    def _print(self, msg: str, refresh: bool = True, color_pair: int = -1):
+        if color_pair == -1: self.output.append(msg)
+        else: self.output.append((msg, color_pair))
         if refresh: self._refresh_output()
 
     def _error(self, msg: str, refresh: bool = True):
