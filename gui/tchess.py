@@ -19,7 +19,7 @@ class Application():
         self.FPS = 120
         self.running = True
         self.clicking = False
-        self.game = game.Game()
+        self.game = game.Game("GUI")
         self.mouseState = [
             False, # Left-click state   #0
             False, # Right-click state  #1

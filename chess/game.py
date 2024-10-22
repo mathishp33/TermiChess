@@ -1,6 +1,6 @@
 import pygame as pg
 import platform
-from chess.move import *
+import chess.move as move
 from gui.events.keyboard_events import *
 from gui.events.event import *
 
@@ -34,45 +34,44 @@ PAWN = 6
 
 class Game():
     current = None
-    def __init__(self):
+    def __init__(self, mode: str):
         Game.current = self
         self.boardSize = 512
         self.board = [0 for i in range(64)]
         self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq")
         self.turn = WHITE
         self.castle = [True, True, True, True]
-        self.moves: list[Move] = []
+        self.moves: list[move.Move] = []
         self.move = 0
 
-        s = "\\" if platform.system() == "Windows" else "/"
+        if mode == "GUI":
+            s = "\\" if platform.system() == "Windows" else "/"
+            self.pieces_tex = {
+                0: None,
 
-        self.pieces_tex = {
-            0: None,
+                WHITE | KING: pg.image.load(f"resources{s}imgs{s}white_1.png"),
+                WHITE | QUEEN: pg.image.load(f"resources{s}imgs{s}white_2.png"),
+                WHITE | BISHOP: pg.image.load(f"resources{s}imgs{s}white_3.png"),
+                WHITE | KNIGHT: pg.image.load(f"resources{s}imgs{s}white_4.png"),
+                WHITE | ROOK: pg.image.load(f"resources{s}imgs{s}white_5.png"),
+                WHITE | PAWN: pg.image.load(f"resources{s}imgs{s}white_6.png"),
 
-            WHITE | KING: pg.image.load(f"resources{s}imgs{s}white_1.png"),
-            WHITE | QUEEN: pg.image.load(f"resources{s}imgs{s}white_2.png"),
-            WHITE | BISHOP: pg.image.load(f"resources{s}imgs{s}white_3.png"),
-            WHITE | KNIGHT: pg.image.load(f"resources{s}imgs{s}white_4.png"),
-            WHITE | ROOK: pg.image.load(f"resources{s}imgs{s}white_5.png"),
-            WHITE | PAWN: pg.image.load(f"resources{s}imgs{s}white_6.png"),
-
-            BLACK | KING: pg.image.load(f"resources{s}imgs{s}black_1.png"),
-            BLACK | QUEEN: pg.image.load(f"resources{s}imgs{s}black_2.png"),
-            BLACK | BISHOP: pg.image.load(f"resources{s}imgs{s}black_3.png"),
-            BLACK | KNIGHT: pg.image.load(f"resources{s}imgs{s}black_4.png"),
-            BLACK | ROOK: pg.image.load(f"resources{s}imgs{s}black_5.png"),
-            BLACK | PAWN: pg.image.load(f"resources{s}imgs{s}black_6.png"),
-        }
-        self.sounds = {
-            "move": pg.mixer.Sound(f"resources{s}sounds{s}move.wav"),
-            "capture": pg.mixer.Sound(f"resources{s}sounds{s}capture.wav"),
-            "check": pg.mixer.Sound(f"resources{s}sounds{s}move-check.wav"),
-            "promote": pg.mixer.Sound(f"resources{s}sounds{s}promote.wav"),
-        }
-
-        for key in self.pieces_tex.keys():
-            if key != 0:
-               self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
+                BLACK | KING: pg.image.load(f"resources{s}imgs{s}black_1.png"),
+                BLACK | QUEEN: pg.image.load(f"resources{s}imgs{s}black_2.png"),
+                BLACK | BISHOP: pg.image.load(f"resources{s}imgs{s}black_3.png"),
+                BLACK | KNIGHT: pg.image.load(f"resources{s}imgs{s}black_4.png"),
+                BLACK | ROOK: pg.image.load(f"resources{s}imgs{s}black_5.png"),
+                BLACK | PAWN: pg.image.load(f"resources{s}imgs{s}black_6.png"),
+            }
+            self.sounds = {
+                "move": pg.mixer.Sound(f"resources{s}sounds{s}move.wav"),
+                "capture": pg.mixer.Sound(f"resources{s}sounds{s}capture.wav"),
+                "check": pg.mixer.Sound(f"resources{s}sounds{s}move-check.wav"),
+                "promote": pg.mixer.Sound(f"resources{s}sounds{s}promote.wav"),
+            }
+            for key in self.pieces_tex.keys():
+                if key != 0:
+                    self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
     
     def from_fen(self, fen: str):
         x, y = 0, 0
@@ -131,6 +130,32 @@ class Game():
 
     def fen(self) -> str:
         raise NotImplementedError()
+    
+    def get_piece_team(piece: int) -> int:
+        return (piece >> 3) << 3
+    
+    def get_piece_type(piece: int) -> int:
+        return piece & 7
+    
+    def get_char_from_piece(piece: int) -> str:
+        t = Game.get_piece_type(piece)
+        if Game.get_piece_team(piece) == WHITE:
+            if t == KING: return "K"
+            if t == QUEEN: return "Q"
+            if t == BISHOP: return "B"
+            if t == KNIGHT: return "N"
+            if t == ROOK: return "R"
+            if t == PAWN: return "P"
+        elif Game.get_piece_team(piece) == BLACK:
+            if t == KING: return "k"
+            if t == QUEEN: return "q"
+            if t == BISHOP: return "b"
+            if t == KNIGHT: return "n"
+            if t == ROOK: return "r"
+            if t == PAWN: return "p"
+        return " "
+
+        
     
 @event_listener
 def onKeyPress(event: KeyPressEvent):
