@@ -39,7 +39,7 @@ class Game():
         Game.current = self
         self.boardSize = 512
         self.board = np.zeros(64)
-        self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq")
+        self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/8/RNBQKBNR w KQkq")
         self.turn = WHITE
         self.castle = [True, True, True, True]
         self.moves: list[Move] = []
@@ -74,13 +74,6 @@ class Game():
             for key in self.pieces_tex.keys():
                 if key != 0:
                     self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
-
-    def generate_possible_moves(self) -> list["Move"]:
-        moves = []
-        for y in range(8):
-            for x in range(8):
-                piece = self.board[position_to_index((x, y))]
-
     
     def from_fen(self, fen: str):
         x, y = 0, 0
@@ -188,7 +181,7 @@ class Move:
         self.castle = castle
         self.en_passant = en_passant
 
-    def do(self):
+    def do(self, discrete: bool = False):
         if self.en_passant:
             pass
         elif self.castle >= 0:
@@ -199,23 +192,29 @@ class Move:
 
         Game.current.board[self.start] = 0
         Game.current.board[self.end] = self.piece
-        if self.eaten_piece != 0:
-            pg.mixer.Sound.play(Game.current.sounds["capture"])
-        else:
-            pg.mixer.Sound.play(Game.current.sounds["move"])
+        if not discrete:
+            if self.eaten_piece != 0:
+                pg.mixer.Sound.play(Game.current.sounds["capture"])
+            else:
+                pg.mixer.Sound.play(Game.current.sounds["move"])
 
-    def undo(self):
+    def undo(self, discrete: bool = False):
         if self.castle >= 0:
             pass
         Game.current.board[self.start] = self.piece
         Game.current.board[self.end] = 0
         Game.current.board[self.eaten_i] = self.eaten_piece
-        pg.mixer.Sound.play(Game.current.sounds["move"])
+        if not discrete:
+            pg.mixer.Sound.play(Game.current.sounds["move"])
 
     def is_similar(self, other) -> bool:
         return self.start == other.start and self.end == other.end and self.castle == other.castle
+    
+    def __eq__(self, value):
+        return self.start == value.start and self.end == value.end and self.castle == value.castle
 
 DIRS_OFFSET = [-1, -8, 1, 8, 7, -9, -7, 9]
+KNIGHT_JUMPS = [6, -10, -17, 15, -15, 17, -6, 10]
 
 class MoveGenerator:
     def __init__(self, parent: Game):
@@ -223,6 +222,59 @@ class MoveGenerator:
         self.locate_pieces()
         self.precompute_move_data()
         self.generate_attacked_squares()
+        self.generate_pseudo_legal_moves(WHITE)
+
+    def update_moves(self, team):
+        self.locate_pieces()
+        self.generate_pseudo_legal_moves(team)
+        self.filter_illegal_moves()
+
+    def generate_pseudo_legal_moves(self, team):
+        self.moves: list[Move] = []
+        for i in self.tracked_pieces:
+            piece = self.parent.board[i]
+            type_ = Game.get_piece_type(piece)
+            team = Game.get_piece_team(piece)
+
+            if type_ in [BISHOP, ROOK, QUEEN]:
+                move_data = self.move_data[i]
+                start_index = 0 if type_ == QUEEN or type_ == ROOK else 4
+                end_index = 4 if type_ == ROOK else 8
+                for j in range(start_index, end_index):
+                    distances = move_data[j]
+                    for k in range(1, int(distances)+1):
+                        square = i + k * DIRS_OFFSET[j]
+                        target_piece = self.parent.board[square]
+                        if Game.get_piece_team(target_piece) == team: break
+                        self.moves.append(Move(i, square))
+                        if Game.get_piece_team(target_piece) != 0: break
+            
+            elif type_ == KNIGHT:
+                start_index = 0 if i % 8 > 1 else 2 if i % 8 > 0 else 4
+                end_index = 8 if i % 8 < 6 else 6 if i % 8 < 7 else 4
+                for j in range(start_index, end_index):
+                    square = i + KNIGHT_JUMPS[j]
+                    if not (square > -1 and square < 64): continue
+                    #if square % 8 != i % 8 + j % 8: continue
+
+                    target_piece = self.parent.board[square]
+                    if Game.get_piece_team(target_piece) == team: continue
+                    self.moves.append(Move(i, square))
+
+            elif type_ == KING:
+                for dir in DIRS_OFFSET:
+                    square = i + dir
+                    if square > -1 and square < 64:
+                        target_piece = self.parent.board[square]
+                        if Game.get_piece_team(target_piece) == team: continue
+                        self.moves.append(Move(i, square))
+    
+    def filter_illegal_moves(self):
+        for move in self.moves:
+            move.do(discrete=True)
+            move.undo(discrete=True)
+        
+
 
     def generate_attacked_squares(self):
         self.attacked_squares = np.zeros((2, 64))
@@ -233,12 +285,17 @@ class MoveGenerator:
         piece = self.parent.board[index]
         type_ = Game.get_piece_type(piece)
         start_index = 0 if type_ == QUEEN or type_ == ROOK else 4
-        end_index = 4 if type_ == QUEEN or type_ == ROOK else 8
-        if Game.get_piece_team(piece) == WHITE:
-            for i in range(start_index, end_index):
-                distances = self.move_data[i]
-                for j in range(1, distances[i]+1):
-                    self.attacked_squares[0][index + j * DIRS_OFFSET[i]] += 1
+        end_index = 4 if type_ == ROOK else 8
+        move_data = self.move_data[index]
+        team = Game.get_piece_team(piece)
+        t_index = 0 if team == WHITE else 1
+        for i in range(start_index, end_index):
+            distances = move_data[i]
+            for j in range(1, int(distances)):
+                square = index + j * DIRS_OFFSET[i]
+                if Game.get_piece_team(self.parent.board[square]) == team: break
+                self.attacked_squares[t_index][square] += 1
+                if Game.get_piece_team(self.parent.board[square]) != 0: break
 
     def locate_pieces(self):
         self.tracked_pieces = []
@@ -247,7 +304,7 @@ class MoveGenerator:
                 self.tracked_pieces.append(i)
 
     def precompute_move_data(self):
-        self.move_data = np.zeros((64, 4))
+        self.move_data = np.zeros((64, 8))
         for x in range(8):
             for y in range(8):
                 left = x
@@ -255,6 +312,10 @@ class MoveGenerator:
                 top = y
                 bottom = 7 - y
                 self.move_data[8*y+x][0] = left
-                self.move_data[8*y+x][1] = right
-                self.move_data[8*y+x][2] = top
+                self.move_data[8*y+x][1] = top
+                self.move_data[8*y+x][2] = right
                 self.move_data[8*y+x][3] = bottom
+                self.move_data[8*y+x][4] = min(left, bottom)
+                self.move_data[8*y+x][5] = min(left, top)
+                self.move_data[8*y+x][6] = min(right, top)
+                self.move_data[8*y+x][7] = min(right, bottom)
