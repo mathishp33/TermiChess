@@ -1,6 +1,5 @@
 import pygame as pg
 import chess.game as game
-from chess.move import *
 import gui.events.event as event
 from gui.events.mouse_events import *
 from gui.events.keyboard_events import *
@@ -81,7 +80,7 @@ class Application():
             for x in range(8):
                 index = 8*y+x
                 current_piece = self.game.board[index]
-                pg.draw.rect(self.screen, col[(x+y)%2], pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
+                pg.draw.rect(self.screen, col[(x+y)%2] if not index in self.game.move_generator.attacked_squares else (255, 0, 0), pg.Rect(x*sqrSize, y*sqrSize, sqrSize, sqrSize))
                 if current_piece != 0:
                     if self.mouseState[4]:
                         if index != self.dragState["index"]:
@@ -112,7 +111,7 @@ def onEndDrag(event: MouseReleaseEvent):
     Application.current.mouseState[4] = False
     pos = Application.get_square_at((event.mouseX, event.mouseY))
     if Application.current.dragState["dragStart"] != pos:
-        move = Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
+        move = game.Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
         move.do()
         Application.current.game.current.moves.append(move)
         Application.current.game.current.move += 1

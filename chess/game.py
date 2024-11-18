@@ -1,6 +1,7 @@
 import pygame as pg
+import numpy as np
 import platform
-import chess.move as move
+from chess.utils import *
 from gui.events.keyboard_events import *
 from gui.events.event import *
 
@@ -37,12 +38,13 @@ class Game():
     def __init__(self, mode: str):
         Game.current = self
         self.boardSize = 512
-        self.board = [0 for i in range(64)]
+        self.board = np.zeros(64)
         self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq")
         self.turn = WHITE
         self.castle = [True, True, True, True]
-        self.moves: list[move.Move] = []
+        self.moves: list[Move] = []
         self.move = 0
+        self.move_generator = MoveGenerator(self)
 
         if mode == "GUI":
             s = "\\" if platform.system() == "Windows" else "/"
@@ -72,6 +74,13 @@ class Game():
             for key in self.pieces_tex.keys():
                 if key != 0:
                     self.pieces_tex[key] = pg.transform.scale(self.pieces_tex[key], (self.boardSize/8, self.boardSize/8))
+
+    def generate_possible_moves(self) -> list["Move"]:
+        moves = []
+        for y in range(8):
+            for x in range(8):
+                piece = self.board[position_to_index((x, y))]
+
     
     def from_fen(self, fen: str):
         x, y = 0, 0
@@ -132,10 +141,10 @@ class Game():
         raise NotImplementedError()
     
     def get_piece_team(piece: int) -> int:
-        return (piece >> 3) << 3
+        return int(piece) & 24
     
     def get_piece_type(piece: int) -> int:
-        return piece & 7
+        return int(piece) & 7
     
     def get_char_from_piece(piece: int) -> str:
         t = Game.get_piece_type(piece)
@@ -168,3 +177,84 @@ def onKeyPress(event: KeyPressEvent):
         if i > 0:
             Game.current.move -= 1
             Game.current.moves[i-1].undo()
+
+class Move:
+    def __init__(self, ibefore: int, iafter: int, eaten_piece: int = 0, eaten_i = -1, castle: int = -1, en_passant: bool = False):
+        self.start = ibefore
+        self.end = iafter
+        self.piece = Game.current.board[self.start]
+        self.eaten_piece = eaten_piece
+        self.eaten_i = eaten_i
+        self.castle = castle
+        self.en_passant = en_passant
+
+    def do(self):
+        if self.en_passant:
+            pass
+        elif self.castle >= 0:
+            pass
+        else:
+            self.eaten_piece = Game.current.board[self.end]
+            self.eaten_i = self.end
+
+        Game.current.board[self.start] = 0
+        Game.current.board[self.end] = self.piece
+        if self.eaten_piece != 0:
+            pg.mixer.Sound.play(Game.current.sounds["capture"])
+        else:
+            pg.mixer.Sound.play(Game.current.sounds["move"])
+
+    def undo(self):
+        if self.castle >= 0:
+            pass
+        Game.current.board[self.start] = self.piece
+        Game.current.board[self.end] = 0
+        Game.current.board[self.eaten_i] = self.eaten_piece
+        pg.mixer.Sound.play(Game.current.sounds["move"])
+
+    def is_similar(self, other) -> bool:
+        return self.start == other.start and self.end == other.end and self.castle == other.castle
+
+DIRS_OFFSET = [-1, -8, 1, 8, 7, -9, -7, 9]
+
+class MoveGenerator:
+    def __init__(self, parent: Game):
+        self.parent = parent
+        self.locate_pieces()
+        self.precompute_move_data()
+        self.generate_attacked_squares()
+
+    def generate_attacked_squares(self):
+        self.attacked_squares = np.zeros((2, 64))
+        for i in self.tracked_pieces:
+            self.get_piece_targets(i)
+            
+    def get_piece_targets(self, index: int):
+        piece = self.parent.board[index]
+        type_ = Game.get_piece_type(piece)
+        start_index = 0 if type_ == QUEEN or type_ == ROOK else 4
+        end_index = 4 if type_ == QUEEN or type_ == ROOK else 8
+        if Game.get_piece_team(piece) == WHITE:
+            for i in range(start_index, end_index):
+                distances = self.move_data[i]
+                for j in range(1, distances[i]+1):
+                    self.attacked_squares[0][index + j * DIRS_OFFSET[i]] += 1
+
+    def locate_pieces(self):
+        self.tracked_pieces = []
+        for i in range(64):
+            if self.parent.board[i] != 0:
+                self.tracked_pieces.append(i)
+
+    def precompute_move_data(self):
+        self.move_data = np.zeros((64, 4))
+        for x in range(8):
+            for y in range(8):
+                left = x
+                right = 7 - x
+                top = y
+                bottom = 7 - y
+                self.move_data[8*y+x][0] = left
+                self.move_data[8*y+x][1] = right
+                self.move_data[8*y+x][2] = top
+                self.move_data[8*y+x][3] = bottom
