@@ -39,7 +39,7 @@ class Game():
         Game.current = self
         self.boardSize = 512
         self.board = np.zeros(64)
-        self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/8/RNBQKBNR w KQkq")
+        self.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq")
         self.turn = WHITE
         self.castle = [True, True, True, True]
         self.moves: list[Move] = []
@@ -234,7 +234,8 @@ class MoveGenerator:
         for i in self.tracked_pieces:
             piece = self.parent.board[i]
             type_ = Game.get_piece_type(piece)
-            team = Game.get_piece_team(piece)
+            team_ = Game.get_piece_team(piece)
+            if team != team_: continue
 
             if type_ in [BISHOP, ROOK, QUEEN]:
                 move_data = self.move_data[i]
@@ -245,7 +246,7 @@ class MoveGenerator:
                     for k in range(1, int(distances)+1):
                         square = i + k * DIRS_OFFSET[j]
                         target_piece = self.parent.board[square]
-                        if Game.get_piece_team(target_piece) == team: break
+                        if Game.get_piece_team(target_piece) == team_: break
                         self.moves.append(Move(i, square))
                         if Game.get_piece_team(target_piece) != 0: break
             
@@ -258,7 +259,7 @@ class MoveGenerator:
                     #if square % 8 != i % 8 + j % 8: continue
 
                     target_piece = self.parent.board[square]
-                    if Game.get_piece_team(target_piece) == team: continue
+                    if Game.get_piece_team(target_piece) == team_: continue
                     self.moves.append(Move(i, square))
 
             elif type_ == KING:
@@ -266,7 +267,36 @@ class MoveGenerator:
                     square = i + dir
                     if square > -1 and square < 64:
                         target_piece = self.parent.board[square]
-                        if Game.get_piece_team(target_piece) == team: continue
+                        if Game.get_piece_team(target_piece) == team_: continue
+                        self.moves.append(Move(i, square))
+
+            elif type_ == PAWN:
+                offsets = (-7, -9, -8, -16, 6) if team_ == WHITE else (7, 9, 8, 16, 1)
+                square = i + offsets[0]
+                if square > -1 and square < 64:
+                    target_piece = self.parent.board[square]
+                    target_team = Game.get_piece_team(target_piece)
+                    if target_team != team_:
+                        if target_team != 0:
+                            self.moves.append(Move(i, square))
+                square = i + offsets[1]
+                if square > -1 and square < 64:
+                    target_piece = self.parent.board[square]
+                    target_team = Game.get_piece_team(target_piece)
+                    if target_team != team_:
+                        if target_team != 0:
+                            self.moves.append(Move(i, square))
+                square = i + offsets[2]
+                if square > -1 and square < 64:
+                    blocking_piece = self.parent.board[square]
+                    if blocking_piece == 0:
+                        self.moves.append(Move(i, square))
+                    else:
+                        continue
+                if i // 8 == offsets[4]:
+                    square = i + offsets[3]
+                    blocking_piece = self.parent.board[square]
+                    if blocking_piece == 0:
                         self.moves.append(Move(i, square))
     
     def filter_illegal_moves(self):

@@ -115,6 +115,7 @@ def onEndDrag(event: MouseReleaseEvent):
         move = game.Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
         if move in g.move_generator.moves:
             move.do()
-            g.move_generator.update_moves(game.WHITE)
+            g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
+            g.move_generator.update_moves(g.turn)
             g.moves.append(move)
             g.move += 1
