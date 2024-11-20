@@ -222,14 +222,58 @@ class MoveGenerator:
         self.locate_pieces()
         self.precompute_move_data()
         self.generate_attacked_squares()
-        self.generate_pseudo_legal_moves(WHITE)
+        self.generate_legal_moves(WHITE)
 
     def update_moves(self, team):
         self.locate_pieces()
-        self.generate_pseudo_legal_moves(team)
+        self.generate_legal_moves(team)
         self.filter_illegal_moves()
 
-    def generate_pseudo_legal_moves(self, team):
+    def generate_pins(self, team):
+        k_index = -1
+        self.pin_lines = [[] for i in range(8)]
+        self.pinned_pieces = []
+        for i in self.tracked_pieces:
+            if self.parent.board[i] == KING | team:
+                k_index = i
+                break
+        for i in len(DIRS_OFFSET):
+            dir = DIRS_OFFSET[i]
+            distance = self.move_data[i]
+            pinned_piece = 0
+            add = False
+            line = []
+            pins = []
+            for j in range(1, distance+1):
+                square = k_index + dir * j
+                target = self.parent.board[square]
+                type_ = Game.get_piece_team(target)
+                team_ = Game.get_piece_team(target)
+                line.add(square)
+                if team_ == team:
+                    if pinned_piece == 0:
+                        pinned_piece = target
+                        pins.append(target)
+                    else:
+                        break
+                elif team_ != 0:
+                    if i < 4:
+                        if type_ == ROOK or type_ == QUEEN:
+                            add = True
+                            break
+                        else:
+                            break
+                    else:
+                        if type_ == BISHOP or type_ == QUEEN:
+                            add = True
+                        else:
+                            break
+            if add:
+                self.pin_lines[i] = line
+                self.pinned_pieces += pins
+
+
+    def generate_legal_moves(self, team):
         self.moves: list[Move] = []
         for i in self.tracked_pieces:
             piece = self.parent.board[i]
@@ -242,8 +286,8 @@ class MoveGenerator:
                 start_index = 0 if type_ == QUEEN or type_ == ROOK else 4
                 end_index = 4 if type_ == ROOK else 8
                 for j in range(start_index, end_index):
-                    distances = move_data[j]
-                    for k in range(1, int(distances)+1):
+                    distance = move_data[j]
+                    for k in range(1, int(distance)+1):
                         square = i + k * DIRS_OFFSET[j]
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: break
@@ -302,8 +346,7 @@ class MoveGenerator:
     def filter_illegal_moves(self):
         for move in self.moves:
             move.do(discrete=True)
-            move.undo(discrete=True)
-        
+            move.undo(discrete=True)     
 
 
     def generate_attacked_squares(self):
