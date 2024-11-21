@@ -219,15 +219,13 @@ KNIGHT_JUMPS = [6, -10, -17, 15, -15, 17, -6, 10]
 class MoveGenerator:
     def __init__(self, parent: Game):
         self.parent = parent
-        self.locate_pieces()
         self.precompute_move_data()
-        self.generate_attacked_squares()
-        self.generate_legal_moves(WHITE)
+        self.update_moves(WHITE)
 
     def update_moves(self, team):
         self.locate_pieces()
+        self.generate_pins(team)
         self.generate_legal_moves(team)
-        self.filter_illegal_moves()
 
     def generate_pins(self, team):
         k_index = -1
@@ -237,35 +235,36 @@ class MoveGenerator:
             if self.parent.board[i] == KING | team:
                 k_index = i
                 break
-        for i in len(DIRS_OFFSET):
+        for i in range(len(DIRS_OFFSET)):
             dir = DIRS_OFFSET[i]
-            distance = self.move_data[i]
+            distance = self.move_data[k_index][i]
             pinned_piece = 0
             add = False
             line = []
             pins = []
-            for j in range(1, distance+1):
+            for j in range(1, int(distance+1)):
                 square = k_index + dir * j
                 target = self.parent.board[square]
-                type_ = Game.get_piece_team(target)
+                type_ = Game.get_piece_type(target)
                 team_ = Game.get_piece_team(target)
-                line.add(square)
+                line.append(square)
                 if team_ == team:
                     if pinned_piece == 0:
                         pinned_piece = target
-                        pins.append(target)
+                        pins.append(square)
                     else:
                         break
                 elif team_ != 0:
                     if i < 4:
-                        if type_ == ROOK or type_ == QUEEN:
+                        if (type_ == ROOK or type_ == QUEEN) and pinned_piece != 0:
                             add = True
                             break
                         else:
                             break
                     else:
-                        if type_ == BISHOP or type_ == QUEEN:
+                        if (type_ == BISHOP or type_ == QUEEN) and pinned_piece != 0:
                             add = True
+                            break
                         else:
                             break
             if add:
@@ -291,7 +290,10 @@ class MoveGenerator:
                         square = i + k * DIRS_OFFSET[j]
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: break
-                        self.moves.append(Move(i, square))
+                        if not i in self.pinned_pieces:
+                            self.moves.append(Move(i, square))
+                        elif self.is_square_in_pins(square):
+                            self.moves.append(Move(i, square))
                         if Game.get_piece_team(target_piece) != 0: break
             
             elif type_ == KNIGHT:
@@ -300,11 +302,11 @@ class MoveGenerator:
                 for j in range(start_index, end_index):
                     square = i + KNIGHT_JUMPS[j]
                     if not (square > -1 and square < 64): continue
-                    #if square % 8 != i % 8 + j % 8: continue
 
                     target_piece = self.parent.board[square]
                     if Game.get_piece_team(target_piece) == team_: continue
-                    self.moves.append(Move(i, square))
+                    if not i in self.pinned_pieces:
+                        self.moves.append(Move(i, square))
 
             elif type_ == KING:
                 for dir in DIRS_OFFSET:
@@ -322,32 +324,41 @@ class MoveGenerator:
                     target_team = Game.get_piece_team(target_piece)
                     if target_team != team_:
                         if target_team != 0:
-                            self.moves.append(Move(i, square))
+                            if not i in self.pinned_pieces:
+                                self.moves.append(Move(i, square))
                 square = i + offsets[1]
                 if square > -1 and square < 64:
                     target_piece = self.parent.board[square]
                     target_team = Game.get_piece_team(target_piece)
                     if target_team != team_:
                         if target_team != 0:
-                            self.moves.append(Move(i, square))
+                            if not i in self.pinned_pieces:
+                                self.moves.append(Move(i, square))
                 square = i + offsets[2]
                 if square > -1 and square < 64:
                     blocking_piece = self.parent.board[square]
                     if blocking_piece == 0:
-                        self.moves.append(Move(i, square))
+                        if not i in self.pinned_pieces:
+                            self.moves.append(Move(i, square))
                     else:
                         continue
                 if i // 8 == offsets[4]:
                     square = i + offsets[3]
                     blocking_piece = self.parent.board[square]
                     if blocking_piece == 0:
-                        self.moves.append(Move(i, square))
+                        if not i in self.pinned_pieces:
+                            self.moves.append(Move(i, square))
     
-    def filter_illegal_moves(self):
-        for move in self.moves:
-            move.do(discrete=True)
-            move.undo(discrete=True)     
-
+    def is_square_in_pins(self, square: int, lines: str = "all"):
+        for i in range(len(self.pin_lines)):
+            line = self.pin_lines[i]
+            if (lines == "all" or lines == "straight") and i < 4:
+                if square in line:
+                    return True
+            elif (lines == "all" or lines == "diagonals") and i > 4:
+                if square in line:
+                    return True
+        return False
 
     def generate_attacked_squares(self):
         self.attacked_squares = np.zeros((2, 64))

@@ -6,13 +6,13 @@ Note that Terminal mode is currently not working well.
 '''
 MODE = "GUI"
 
+
 if __name__ == '__main__':
     if MODE == "GUI":
         import gui.tchess as gui
         main = gui.Application()
         while main.running:
             main.update()
-
     elif MODE == "TERMINAL":
         import terminal.tchess as terminal
         terminal.main()
