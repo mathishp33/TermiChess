@@ -224,11 +224,13 @@ class MoveGenerator:
 
     def update_moves(self, team):
         self.locate_pieces()
+        self.generate_attacked_squares()
         self.generate_pins(team)
         self.generate_legal_moves(team)
 
     def generate_pins(self, team):
         k_index = -1
+        self.checked = False
         self.pin_lines = [[] for i in range(8)]
         self.pinned_pieces = []
         for i in self.tracked_pieces:
@@ -267,6 +269,8 @@ class MoveGenerator:
                             break
                         else:
                             break
+                else:
+                    self.checked = True
             if add:
                 self.pin_lines[i] = line
                 self.pinned_pieces += pins
@@ -314,7 +318,8 @@ class MoveGenerator:
                     if square > -1 and square < 64:
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: continue
-                        self.moves.append(Move(i, square))
+                        if self.attacked_squares[0 if team_ == WHITE else 1][square] == 0:
+                            self.moves.append(Move(i, square))
 
             elif type_ == PAWN:
                 offsets = (-7, -9, -8, -16, 6) if team_ == WHITE else (7, 9, 8, 16, 1)
@@ -325,7 +330,10 @@ class MoveGenerator:
                     if target_team != team_:
                         if target_team != 0:
                             if not i in self.pinned_pieces:
-                                self.moves.append(Move(i, square))
+                                if self.checked:
+                                    pass
+                                else:
+                                    self.moves.append(Move(i, square))
                 square = i + offsets[1]
                 if square > -1 and square < 64:
                     target_piece = self.parent.board[square]
@@ -377,8 +385,8 @@ class MoveGenerator:
             distances = move_data[i]
             for j in range(1, int(distances)):
                 square = index + j * DIRS_OFFSET[i]
+                self.attacked_squares[0 if t_index == 1 else 1][square] += 1
                 if Game.get_piece_team(self.parent.board[square]) == team: break
-                self.attacked_squares[t_index][square] += 1
                 if Game.get_piece_team(self.parent.board[square]) != 0: break
 
     def locate_pieces(self):
