@@ -211,7 +211,7 @@ class Move:
         return self.start == other.start and self.end == other.end and self.castle == other.castle
     
     def __eq__(self, value):
-        return self.start == value.start and self.end == value.end and self.castle == value.castle
+        return value != None and self.start == value.start and self.end == value.end and self.castle == value.castle
 
 DIRS_OFFSET = [-1, -8, 1, 8, 7, -9, -7, 9]
 KNIGHT_JUMPS = [6, -10, -17, 15, -15, 17, -6, 10]
@@ -356,6 +356,7 @@ class MoveGenerator:
                     if blocking_piece == 0:
                         if not i in self.pinned_pieces:
                             self.moves.append(Move(i, square))
+        return self.moves
     
     def is_square_in_pins(self, square: int, lines: str = "all"):
         for i in range(len(self.pin_lines)):
@@ -391,7 +392,7 @@ class MoveGenerator:
                     if Game.get_piece_team(self.parent.board[square]) == team: break
                     if Game.get_piece_team(self.parent.board[square]) != 0: break
             
-        elif type_ == KNIGHT:
+        """ elif type_ == KNIGHT:
             start_index = 0 if i % 8 > 1 else 2 if i % 8 > 0 else 4
             end_index = 8 if i % 8 < 6 else 6 if i % 8 < 7 else 4
             for j in range(start_index, end_index):
@@ -446,7 +447,7 @@ class MoveGenerator:
                 blocking_piece = self.parent.board[square]
                 if blocking_piece == 0:
                     if not i in self.pinned_pieces:
-                        self.moves.append(Move(i, square))
+                        self.moves.append(Move(i, square)) """
 
     def locate_pieces(self):
         self.tracked_pieces = []

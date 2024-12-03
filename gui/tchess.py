@@ -4,7 +4,7 @@ import gui.events.event as event
 from gui.events.mouse_events import *
 from gui.events.keyboard_events import *
 import chess.utils as utils
-
+import bot.bot as bot
 
 class Application():
     current = None
@@ -27,6 +27,7 @@ class Application():
             False, # is dragging ?      #4
             ]
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
+        self.bot = bot.Bot()
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -109,13 +110,21 @@ def onStartDrag(event: MouseClickEvent):
 @event_listener
 def onEndDrag(event: MouseReleaseEvent):
     Application.current.mouseState[4] = False
-    g = game.Game.current
     pos = Application.get_square_at((event.mouseX, event.mouseY))
     if Application.current.dragState["dragStart"] != pos:
         move = game.Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
-        if move in g.move_generator.moves:
-            move.do()
-            g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
-            g.move_generator.update_moves(g.turn)
-            g.moves.append(move)
-            g.move += 1
+        do_move(move)
+        
+
+def do_move(move: game.Move):
+    g = game.Game.current
+    if move in g.move_generator.moves:
+        move.do()
+        g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
+        g.move_generator.update_moves(g.turn)
+        g.moves.append(move)
+        g.move += 1
+        if g.turn == game.BLACK:
+            to_play = Application.current.bot.input(g.move_generator.moves)
+            do_move(to_play)
+            
