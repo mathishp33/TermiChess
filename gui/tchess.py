@@ -27,7 +27,7 @@ class Application():
             False, # is dragging ?      #4
             ]
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
-        self.bot = bot.Bot()
+        self.bot = bot.Randbot(game.BLACK)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -124,7 +124,7 @@ def do_move(move: game.Move):
         g.move_generator.update_moves(g.turn)
         g.moves.append(move)
         g.move += 1
-        if g.turn == game.BLACK:
-            to_play = Application.current.bot.input(g.move_generator.moves)
+        if g.turn == Application.current.bot.team:
+            to_play = Application.current.bot.think(g.move_generator.moves)
             do_move(to_play)
             

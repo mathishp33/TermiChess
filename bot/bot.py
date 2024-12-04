@@ -1,11 +1,24 @@
 import numpy as np
+import random
+import chess.game as game
 
 class Bot:
-    def __init__(self):
+    def __init__(self, team: int):
+        self.team = team
+
+    def think(self, moves: list):
+        """
+        This is an interface function that takes the list of all possible moves, and returns a Move object.
+        This returns nothing if not overriden by a subclass.
+        """
         pass
 
-    def input(self, moves: list):
-        pass
+class Randbot(Bot):
+    def __init__(self, team: int):
+        super().__init__(team)
+
+    def think(self, moves):
+        return random.choice(moves)
 
 def turn(board, pieces):
     #pieces[i] = [type, pos, moves]
