@@ -4,6 +4,7 @@ import platform
 from chess.utils import *
 from gui.events.keyboard_events import *
 from gui.events.event import *
+import struct
 
 
 '''
@@ -170,7 +171,7 @@ def onKeyPress(event: KeyPressEvent):
         if i > 0:
             Game.current.move -= 1
             Game.current.moves[i-1].undo()
-
+ 
 class Move:
     def __init__(self, ibefore: int, iafter: int, eaten_piece: int = 0, eaten_i = -1, castle: int = -1, en_passant: bool = False):
         self.start = ibefore
@@ -236,61 +237,73 @@ class MoveGenerator:
 
     def __init__(self, parent: Game):
         self.parent = parent
+        self.checked = False
+        self.checker = None
+        self.pinned_pieces = []
+        self.pin_lines = [[] for i in range(8)]
+        self.attacked_squares = [[], []]
         self.precompute_move_data()
         self.locate_pieces()
         self.update_moves(WHITE)
 
     def update_moves(self, team):
-        self.generate_attacked_squares()
+        self.pin_lines = [[] for i in range(8)]
+        self.pinned_pieces = []
+        self.checked = False
+        self.generate_attacked_squares(team)
         self.generate_pins(team)
         self.generate_legal_moves(team)
 
     def generate_pins(self, team):
-        k_index = -1
-        self.checked = False
-        self.pin_lines = [[] for i in range(8)]
-        self.pinned_pieces = []
-        for i in MoveGenerator.tracked_pieces:
-            if self.parent.board[i] == KING | team:
-                k_index = i
-                break
-        for i in range(len(DIRS_OFFSET)):
-            dir = DIRS_OFFSET[i]
-            distance = self.move_data[k_index][i]
-            pinned_piece = 0
-            add = False
-            line = []
-            pins = []
-            for j in range(1, int(distance+1)):
-                square = k_index + dir * j
-                target = self.parent.board[square]
-                type_ = Game.get_piece_type(target)
-                team_ = Game.get_piece_team(target)
-                line.append(square)
-                if team_ == team:
-                    if pinned_piece == 0:
-                        pinned_piece = target
-                        pins.append(square)
-                    else:
-                        break
-                elif team_ != 0:
-                    if i < 4:
-                        if (type_ == ROOK or type_ == QUEEN) and pinned_piece != 0:
-                            add = True
-                            break
+        if not self.checked:
+            k_index = -1
+            for i in MoveGenerator.tracked_pieces:
+                if self.parent.board[i] == KING | team:
+                    k_index = i
+                    break
+            for i in range(len(DIRS_OFFSET)):
+                dir = DIRS_OFFSET[i]
+                distance = self.move_data[k_index][i]
+                pinned_piece = 0
+                add = False
+                line = []
+                pins = []
+                for j in range(1, int(distance+1)):
+                    square = k_index + dir * j
+                    target = self.parent.board[square]
+                    type_ = Game.get_piece_type(target)
+                    team_ = Game.get_piece_team(target)
+                    line.append(square)
+                    if team_ == team:
+                        if pinned_piece == 0:
+                            pinned_piece = target
+                            pins.append(square)
                         else:
                             break
-                    else:
-                        if (type_ == BISHOP or type_ == QUEEN) and pinned_piece != 0:
-                            add = True
+                    elif team_ != 0:
+                        if i < 4:
+                            if (type_ == ROOK or type_ == QUEEN) and pinned_piece != 0:
+                                if pinned_piece == 0:
+                                    self.checked = True
+                                    self.checker = square
+                                    line.append(square + dir)
+                                add = True
                             break
                         else:
+                            if (type_ == BISHOP or type_ == QUEEN):
+                                if pinned_piece == 0:
+                                    self.checked = True
+                                    self.checker = square
+                                    line.append(square + dir)
+                                add = True
                             break
-                else:
-                    self.checked = True
-            if add:
-                self.pin_lines[i] = line
-                self.pinned_pieces += pins
+                if add:
+                    self.pin_lines[i] = line
+                    self.pinned_pieces += pins
+        else:
+            for i in MoveGenerator.tracked_pieces:
+                if Game.get_piece_team(self.parent.board[i]) == team:
+                    self.pinned_pieces.append(i)
 
 
     def generate_legal_moves(self, team):
@@ -311,14 +324,14 @@ class MoveGenerator:
                         square = i + k * DIRS_OFFSET[j]
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: break
-                        if not i in self.pinned_pieces:
+                        if not i in self.pinned_pieces and not self.checked:
                             self.moves.append(Move(i, square))
-                        elif self.is_square_in_pins(square):
+                        elif self.checked and self.is_square_in_pins(square):
                             self.moves.append(Move(i, square))
                         if Game.get_piece_team(target_piece) != 0: break
             
             elif type_ == KNIGHT:
-                if not i in self.pinned_pieces:
+                if not i in self.pinned_pieces and not self.checked:
                     start_index = 0 if i % 8 > 1 else 2 if i % 8 > 0 else 4
                     end_index = 8 if i % 8 < 6 else 6 if i % 8 < 7 else 4
                     for j in range(start_index, end_index):
@@ -327,6 +340,16 @@ class MoveGenerator:
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: continue
                         self.moves.append(Move(i, square))
+                elif self.checked:
+                    start_index = 0 if i % 8 > 1 else 2 if i % 8 > 0 else 4
+                    end_index = 8 if i % 8 < 6 else 6 if i % 8 < 7 else 4
+                    for j in range(start_index, end_index):
+                        square = i + KNIGHT_JUMPS[j]
+                        if self.is_square_in_pins(square):
+                            if not (square > -1 and square < 64): continue
+                            target_piece = self.parent.board[square]
+                            if Game.get_piece_team(target_piece) == team_: continue
+                            self.moves.append(Move(i, square))   
 
             elif type_ == KING:
                 move_data = self.move_data[i]
@@ -348,7 +371,9 @@ class MoveGenerator:
                     target_team = Game.get_piece_team(target_piece)
                     if target_team != team_ and target_team != 0:
                         if i % 8 > 0:
-                            if not i in self.pinned_pieces:
+                            if not i in self.pinned_pieces and not self.checked:
+                                self.moves.append(Move(i, square))
+                            elif self.checked and self.is_square_in_pins(square):
                                 self.moves.append(Move(i, square))
                 square = i + offsets[1]
                 if square > -1 and square < 64:
@@ -356,13 +381,17 @@ class MoveGenerator:
                     target_team = Game.get_piece_team(target_piece)
                     if target_team != team_ and target_team != 0:
                         if i % 8 < 7:
-                            if not i in self.pinned_pieces:
+                            if not i in self.pinned_pieces and not self.checked:
+                                self.moves.append(Move(i, square))
+                            elif self.checked and self.is_square_in_pins(square):
                                 self.moves.append(Move(i, square))
                 square = i + offsets[2]
                 if square > -1 and square < 64:
                     blocking_piece = self.parent.board[square]
                     if blocking_piece == 0:
-                        if not i in self.pinned_pieces:
+                        if not i in self.pinned_pieces and not self.checked:
+                            self.moves.append(Move(i, square))
+                        elif self.checked and self.is_square_in_pins(square):
                             self.moves.append(Move(i, square))
                     else:
                         continue
@@ -370,7 +399,9 @@ class MoveGenerator:
                     square = i + offsets[3]
                     blocking_piece = self.parent.board[square]
                     if blocking_piece == 0:
-                        if not i in self.pinned_pieces:
+                        if not i in self.pinned_pieces and not self.checked:
+                            self.moves.append(Move(i, square))
+                        elif self.checked and self.is_square_in_pins(square):
                             self.moves.append(Move(i, square))
         return self.moves
     
@@ -385,10 +416,11 @@ class MoveGenerator:
                     return True
         return False
 
-    def generate_attacked_squares(self):
+    def generate_attacked_squares(self, team: int):
         self.attacked_squares = np.zeros((2, 64))
         for i in MoveGenerator.tracked_pieces:
-            self.get_piece_targets(i)
+            if Game.get_piece_team(self.parent.board[i]):
+                self.get_piece_targets(i)
             
     def get_piece_targets(self, index: int):
         piece = self.parent.board[index]
@@ -402,7 +434,7 @@ class MoveGenerator:
             end_index = 4 if type_ == ROOK else 8
             for i in range(start_index, end_index):
                 distance = move_data[i]
-                for j in range(1, int(distance)):
+                for j in range(1, int(distance)+1):
                     square = index + j * DIRS_OFFSET[i]
                     self.attacked_squares[0 if t_index == 1 else 1][square] += 1
                     if self.parent.board[square] != 0: break
@@ -414,6 +446,13 @@ class MoveGenerator:
                 square = index + KNIGHT_JUMPS[j]
                 if not (square > -1 and square < 64): continue
                 self.attacked_squares[0 if t_index == 1 else 1][square] += 1
+                target = self.parent.board[square]
+                if Game.get_piece_team(target) != team:
+                    if Game.get_piece_type(target) == KING:
+                        self.checked = True
+                        self.checker = index
+                        self.pin_lines[0].append(index)
+                        self.pin_lines[4].append(index)
                 
         elif type_ == KING:
             for i in range(len(DIRS_OFFSET)):
@@ -429,10 +468,20 @@ class MoveGenerator:
             if square > -1 and square < 64:
                 if index % 8 > 0:
                     self.attacked_squares[0 if t_index == 1 else 1][square] += 1
+                    target = self.parent.board[square]
+                    if Game.get_piece_team(target) != team:
+                        if Game.get_piece_type(target) == KING:
+                            self.checked = True
+                            self.checker = index
             square = index + offsets[1]
             if square > -1 and square < 64:
                 if index % 8 < 7:
                     self.attacked_squares[0 if t_index == 1 else 1][square] += 1
+                    target = self.parent.board[square]
+                    if Game.get_piece_team(target) != team:
+                        if Game.get_piece_type(target) == KING:
+                            self.checked = True
+                            self.checker = index
                             
 
     def locate_pieces(self):

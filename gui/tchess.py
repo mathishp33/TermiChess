@@ -27,7 +27,7 @@ class Application():
             False, # is dragging ?      #4
             ]
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
-        self.bot = bot.Randbot(game.BLACK)
+        self.bot = bot.Randbot(0)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
