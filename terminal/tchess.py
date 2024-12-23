@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import curses
-import chess.game as chess.game
+import chess.game as game
 import terminal.command as commands
 import math
 
@@ -10,7 +10,7 @@ class TerminalApp():
     
     def main(self, screen):
         TerminalApp.instance = self
-        self.game = chess.game.Game("TERMINAL")
+        self.game = game.Game("TERMINAL")
         self.screen = screen
         self.screen.nodelay(True)
         self.screen.clear()
@@ -183,7 +183,7 @@ class TerminalApp():
 
         for iy in range(8):
             for ix in range(8):
-                self.render_pad.addstr(y, x, chess.game.Game.get_char_from_piece(self.game.board[8*iy+ix]), curses.A_REVERSE if [iy, ix] == self.board_cursor else 0)
+                self.render_pad.addstr(y, x, game.Game.get_char_from_piece(self.game.board[8*iy+ix]), curses.A_REVERSE if [iy, ix] == self.board_cursor else 0)
                 x += sqrwidth + 1
             x = math.ceil(sqrwidth/2)
             y += sqrheight + 1

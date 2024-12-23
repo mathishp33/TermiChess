@@ -286,7 +286,6 @@ class MoveGenerator:
                                 if pinned_piece == 0:
                                     self.checked = True
                                     self.checker = square
-                                    line.append(square + dir)
                                 add = True
                             break
                         else:
@@ -294,7 +293,6 @@ class MoveGenerator:
                                 if pinned_piece == 0:
                                     self.checked = True
                                     self.checker = square
-                                    line.append(square + dir)
                                 add = True
                             break
                 if add:
@@ -360,7 +358,7 @@ class MoveGenerator:
                     if distance != 0:
                         target_piece = self.parent.board[square]
                         if Game.get_piece_team(target_piece) == team_: continue
-                        if self.attacked_squares[0 if team_ == WHITE else 1][square] == 0:
+                        if self.attacked_squares[0 if team_ == WHITE else 1][square] == 0: 
                             self.moves.append(Move(i, square))
 
             elif type_ == PAWN:
