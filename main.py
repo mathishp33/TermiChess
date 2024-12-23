@@ -4,7 +4,7 @@
 Change the variable MODE to test either the GUI mode or the Terminal mode
 Note that Terminal mode is currently not working well.
 '''
-MODE = "GUI"
+MODE = "TEST"
 
 
 if __name__ == '__main__':
@@ -16,3 +16,6 @@ if __name__ == '__main__':
     elif MODE == "TERMINAL":
         import terminal.tchess as terminal
         terminal.main()
+    elif MODE == "TEST":
+        import chess.tests.move_generation as mg
+        print(mg.test_move_generation(4))
