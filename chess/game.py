@@ -376,6 +376,8 @@ class MoveGenerator:
                     if pinned_piece == 0:
                         pinned_piece = target
                         pins.append(square)
+                    else:
+                        break
                 elif team_ != 0:
                     if i < 4:
                         if type_ == ROOK or type_ == QUEEN:
