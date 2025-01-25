@@ -9,7 +9,7 @@ import bot.bot as bot
 
 class Application():
     current = None
-    def __init__(self):
+    def __init__(self, DisableBot: bool = False, BotType: str = 'RandBot'):
         Application.current = self
         self.size = 64
         self.RES = self.WIDTH, self.HEIGHT = self.size * 8, self.size * 8
@@ -28,12 +28,14 @@ class Application():
             False,  # is dragging ?        #4
             ]
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
-        self.bot = bot.Randbot(0)
+
+        if BotType == 'RandBot':
+            self.bot = bot.Randbot((not DisableBot) * 8)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
         y = int(pos[1]/64)
-        i = 8*y+x
+        i = 8 * y + x
         return self.game.board[i] if i >= 0 and i <= 63 else None
     
     def get_square_at(pos: tuple[int, int]):
@@ -72,7 +74,7 @@ class Application():
         self.render()
 
         pg.display.flip()
-        pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps(), 1)))
+        pg.display.set_caption('Chess Bot vs Player Game   |   ' + str(round(self.clock.get_fps())))
         self.clock.tick(self.FPS)
 
     def render(self):
@@ -126,6 +128,7 @@ def do_move(move: game.Move):
         g.moves.append(move)
         g.move += 1
         if g.turn == Application.current.bot.team:
+            print('doing it')
             to_play = Application.current.bot.think(g.move_generator.moves)
             do_move(to_play)
             

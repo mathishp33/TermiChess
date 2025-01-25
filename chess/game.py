@@ -399,8 +399,9 @@ class MoveGenerator:
 
 
     def generate_legal_moves(self, team) -> list[Move]:
-        print(self.check_count)
-        print(self.pin_lines)
+        #print(self.check_count)
+        #print(self.pin_lines)
+        
         self.moves: list[Move] = []
         for i in MoveGenerator.tracked_pieces:
             piece = self.parent.board[i]

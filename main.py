@@ -10,7 +10,7 @@ MODE = "GUI"
 if __name__ == '__main__':
     if MODE == "GUI":
         import gui.tchess as gui
-        main = gui.Application()
+        main = gui.Application(False, 'RandBot')
         while main.running:
             main.update()
     elif MODE == "TERMINAL":
