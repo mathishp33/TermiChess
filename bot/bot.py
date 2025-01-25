@@ -10,9 +10,10 @@ class DumbyBot:
         self.moves = {}
         for i, j in enumerate(moves):
             self.moves[j.eaten_piece] = j
-        self.moves = sorted(self.moves)
+        self.moves = dict(sorted(self.moves.items()))
+        print(self.moves)
 
-        return self.moves[-1]
+        return list(self.moves.values())[-1]
 
 
 class Randbot(DumbyBot):
