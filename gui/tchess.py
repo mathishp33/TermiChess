@@ -1,4 +1,5 @@
 import pygame as pg
+from pygame.locals import *
 import chess.game as game
 import gui.events.event as event
 from gui.events.mouse_events import *
@@ -11,7 +12,7 @@ class Application():
     def __init__(self):
         Application.current = self
         self.size = 64
-        self.RES = self.WIDTH, self.HEIGHT = self.size*8, self.size*8
+        self.RES = self.WIDTH, self.HEIGHT = self.size * 8, self.size * 8
         self.screen = pg.display.set_mode(self.RES)
         self.clock = pg.time.Clock()
         pg.init()
@@ -20,11 +21,11 @@ class Application():
         self.clicking = False
         self.game = game.Game("GUI")
         self.mouseState = [
-            False, # Left-click state   #0
-            False, # Right-click state  #1
-            False, # Middle-click state #2
-            (0, 0), # Mouse position    #3
-            False, # is dragging ?      #4
+            False,  # Left-click state     #0
+            False,  # Right-click state    #1
+            False,  # Middle-click state   #2
+            (0, 0), # Mouse position       #3
+            False,  # is dragging ?        #4
             ]
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
         self.bot = bot.Randbot(0)
