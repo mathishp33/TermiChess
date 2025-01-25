@@ -128,7 +128,6 @@ def do_move(move: game.Move):
         g.moves.append(move)
         g.move += 1
         if g.turn == Application.current.bot.team:
-            print('doing it')
             to_play = Application.current.bot.think(g.move_generator.moves)
             do_move(to_play)
             
