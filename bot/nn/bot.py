@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import random
-
 
 
 class ChessBot(nn.Module):
@@ -53,9 +51,6 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.BCEWithLogitsLoss()
 
-
-    random.seed(0)
-    boards = [chess.Board() for _ in range(100)]
     moves = [random.choice(list(board.legal_moves)) for board in boards]
 
 
