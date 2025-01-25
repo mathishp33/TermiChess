@@ -31,6 +31,8 @@ class Application():
 
         if BotType == 'RandBot':
             self.bot = bot.Randbot((not DisableBot) * 8)
+        elif BotType == 'DumbyBot':
+            self.bot = bot.DumbyBot((not DisableBot) * 8)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)

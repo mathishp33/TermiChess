@@ -2,18 +2,20 @@ import numpy as np
 import random
 import chess.game as game
 
-class Bot:
+class DumbyBot:
     def __init__(self, team: int):
         self.team = team
 
     def think(self, moves: list):
-        """
-        This is an interface function that takes the list of all possible moves, and returns a Move object.
-        This returns nothing if not overriden by a subclass.
-        """
-        pass
+        self.moves = {}
+        for i, j in enumerate(moves):
+            self.moves[j.eaten_piece] = j
+        self.moves = sorted(self.moves)
 
-class Randbot(Bot):
+        return self.moves[-1]
+
+
+class Randbot(DumbyBot):
     def __init__(self, team: int):
         super().__init__(team)
 
