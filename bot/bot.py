@@ -10,6 +10,8 @@ class DumbyBot:
         self.moves = {}
         for i, j in enumerate(moves):
             self.moves[j.eaten_piece] = j
+        
+        print(self.moves.items())
         self.moves = dict(sorted(self.moves.items()))
         print(self.moves)
 

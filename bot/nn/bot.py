@@ -51,7 +51,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.BCEWithLogitsLoss()
 
-    moves = [random.choice(list(board.legal_moves)) for board in boards]
+    moves = [] #GET THE MOVES
 
 
     training_data = [(board, move) for board, move in zip(boards, moves)]

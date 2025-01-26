@@ -9,7 +9,7 @@ import bot.bot as bot
 
 class Application():
     current = None
-    def __init__(self, DisableBot: bool = False, BotType: str = 'RandBot'):
+    def __init__(self, BotMode: str, BotType: str = 'RandBot'):
         Application.current = self
         self.size = 64
         self.RES = self.WIDTH, self.HEIGHT = self.size * 8, self.size * 8
@@ -30,9 +30,9 @@ class Application():
         self.dragState = {"piece": 0, "offsetX": 0, "offsetY": 0, "index": 0, "dragStart": (0, 0)}
 
         if BotType == 'RandBot':
-            self.bot = bot.Randbot((not DisableBot) * 8)
+            self.bot = bot.Randbot(8)
         elif BotType == 'DumbyBot':
-            self.bot = bot.DumbyBot((not DisableBot) * 8)
+            self.bot = bot.DumbyBot(8)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
