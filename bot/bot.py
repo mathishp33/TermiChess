@@ -7,13 +7,15 @@ class DumbyBot:
         self.team = team
 
     def think(self, moves: list):
+        self.anticipate(moves)
+        
+    
+    def anticipate(self, moves: list) -> object:
         self.moves = {}
         for i, j in enumerate(moves):
             self.moves[j.eaten_piece] = j
-        
-        print(self.moves.items())
+
         self.moves = dict(sorted(self.moves.items()))
-        print(self.moves)
 
         return list(self.moves.values())[-1]
 
