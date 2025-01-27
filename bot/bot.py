@@ -8,9 +8,18 @@ class DumbyBot:
         self.anticipated_moves = 3
 
     def think(self, game: game.Game, moves: list):
-        self.moves = [[move, []] for move in moves]
         self.given_game = game
-        self.next_move = self.anticipate2(moves)
+
+        self.moves = [[move, []] for move in moves]
+        self.games = []
+        for move in self.moves:
+            ext_game = self.given_game
+            ext_game.move_generator.update_moves(8)
+            ext_game.moves.append(move)
+            ext_game.move += 1
+            self.games.append([ext_game, []])
+
+        self.moves = self.anticipate2(moves)
         self.do_move(self.next_move)
         
     def anticipate(self, moves: list) -> object:
