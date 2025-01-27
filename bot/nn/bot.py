@@ -34,11 +34,11 @@ def train_bot(model, data, optimizer, criterion, epochs=10):
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-        print(f"Epoch {epoch + 1}, Loss: {epoch_loss:.4f}")
+        print(f"epoch {epoch + 1} | loss: {epoch_loss:.4f}")
 
 
 def move_to_target(move):
-    """Convert a move into a target tensor."""
+
     start, end = move.from_square, move.to_square
     target = np.zeros(64 * 64, dtype=float)
     target[start * 64 + end] = 1.0

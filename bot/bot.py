@@ -5,19 +5,39 @@ import chess.game as game
 class DumbyBot:
     def __init__(self, team: int):
         self.team = team
+        self.anticipated_moves = 3
 
-    def think(self, moves: list):
-        self.anticipate(moves)
+    def think(self, game: game.Game, moves: list):
+        self.moves = [[move, []] for move in moves]
+        self.given_game = game
+        self.next_move = self.anticipate2(moves)
+        self.do_move(self.next_move)
         
-    
     def anticipate(self, moves: list) -> object:
         self.moves = {}
         for i, j in enumerate(moves):
             self.moves[j.eaten_piece] = j
 
         self.moves = dict(sorted(self.moves.items()))
-
         return list(self.moves.values())[-1]
+    
+    def anticipate2(self, moves: list) -> object:
+        self.moves = {}
+        for i, j in enumerate(moves):
+            self.moves[j.eaten_piece] = j
+
+        self.moves = dict(sorted(self.moves.items()))
+        return list(self.moves.values())[0]
+    
+    def do_move(self, move: game.Move):
+        g = game.Game.current
+        if move in g.move_generator.moves:
+            g.move_generator.update_moves(g.turn)
+            g.moves.append(move)
+            g.move += 1
+            if g.turn == self.team:
+                to_play = self.think(g.move_generator.moves)
+                self.do_move(to_play)
 
 
 class Randbot(DumbyBot):
