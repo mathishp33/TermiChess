@@ -5,57 +5,44 @@ import chess.game as game
 class DumbyBot:
     def __init__(self, team: int):
         self.team = team
-        self.anticipated_moves = 3
+        self.anticipated_moves = 2
 
     def think(self, game: game.Game, moves: list):
         self.given_game = game
+        self.games = []
         self.count_down = self.anticipated_moves
-        self.depth = 0
+        self.turn = 16
 
-        self.moves = [[move, []] for move in moves]
-        self.count_down -= 1
-        if self.count_down != 0:
-            self.finals_moves = [i[0] for i in self.moves]
+        self.moves = [[move, move.eaten_piece, self.given_game, []] for move in moves]
+
+        if self.anticipated_moves < 2:
+            self.finals_moves = self.moves
             return self.anticipate(self.finals_moves)
+        self.count_down -= 1
         
-        if self.count_down != 0:
-            self.games = []
-            for move in self.moves:
-                ext_game = self.given_game
-                ext_game.move_generator.update_moves(16)
-                ext_game.moves.append(move)
-                ext_game.move += 1
-                self.games.append([ext_game, []])
+        while self.count_down > 0:
+            self.moves = self.parsifier(self.moves, self.given_game) 
             
+        self.counting_moves(self.moves)
+            
+    def parsifier(self, moves: list, game: game):
+        for i, move in enumerate(moves):
+            ext_game = game
+            ext_game.move_generator.update_moves(self.turn)
+            ext_game.moves.append(move[0])
+            ext_game.move += 1
+            self.turn = 8 if self.turn == 16 else 16
+            self.count_down -= 1
+            for k, j in enumerate(ext_game.move_generator.moves):
+                move[2].append([j, j.eaten_piece, self.given_game, []])
 
-        self.moves = self.anticipate2(moves)
-        self.do_move(self.next_move)
-        
-    def anticipate(self, moves: list) -> object:
-        self.moves = {}
-        for i, j in enumerate(moves):
-            self.moves[j.eaten_piece] = j
+        return moves
 
-        self.moves = dict(sorted(self.moves.items()))
-        return list(self.moves.values())[-1]
-    
-    def anticipate2(self, moves: list) -> object:
-        self.moves = {}
-        for i, j in enumerate(moves):
-            self.moves[j.eaten_piece] = j
-
-        self.moves = dict(sorted(self.moves.items()))
-        return list(self.moves.values())[0]
-    
-    def do_move(self, move: game.Move):
-        g = game.Game.current
-        if move in g.move_generator.moves:
-            g.move_generator.update_moves(g.turn)
-            g.moves.append(move)
-            g.move += 1
-            if g.turn == self.team:
-                to_play = self.think(g.move_generator.moves)
-                self.do_move(to_play)
+    def counting_moves(self, moves: list):
+        self.better_score = []
+        for move in moves:
+            if move[3] != []:
+                for move2 in move[3]:
 
 
 class Randbot(DumbyBot):
