@@ -9,20 +9,22 @@ class DumbyBot:
 
     def think(self, game: game.Game, moves: list):
         self.given_game = game
+        self.count_down = self.anticipated_moves
 
         self.moves = [[move, []] for move in moves]
-        if self.anticipated_moves < 2:
+        self.count_down -= 1
+        if not self.count_down:
             self.finals_moves = [i[0] for i in self.moves]
             return self.anticipate(self.finals_moves)
         
-        else:
-            self.games = []
-            for move in self.moves:
-                ext_game = self.given_game
-                ext_game.move_generator.update_moves(16)
-                ext_game.moves.append(move)
-                ext_game.move += 1
-                self.games.append([ext_game, []])
+        self.games = []
+        for move in self.moves:
+            ext_game = self.given_game
+            ext_game.move_generator.update_moves(16)
+            ext_game.moves.append(move)
+            ext_game.move += 1
+            self.games.append([ext_game, []])
+            
 
         self.moves = self.anticipate2(moves)
         self.do_move(self.next_move)
