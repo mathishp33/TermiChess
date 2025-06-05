@@ -32,7 +32,7 @@ class Application():
         if Player1 == 'RandBot':
             self.bot = bot.Randbot(8)
         elif Player1 == 'ChessAI':
-            self.bot = bot.ChessAI(8, 0.001)
+            self.bot = bot.ChessAI(8)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -134,7 +134,7 @@ def do_move(move: game.Move):
         if g.turn != Application.current.bot.team:
             if hasattr(Application.current.bot, 'train'):
                 moves = g.move_generator.moves
-                board = g.board.copy().tolist()
+                board = g.board.copy()
                 Application.current.bot.train([(board, moves, moves.index(move))], 10)
         move.do()
         g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE

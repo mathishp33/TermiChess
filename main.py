@@ -16,7 +16,7 @@ if __name__ == '__main__':
         main = gui.Application(BOT, 'None') #white and black 
         if BOTMODE == 'load':
             import bot.bot as bot
-            main.bot, data = bot.ChessAI.load('bot.pckl', 0.001, 8)
+            main.bot, data = bot.ChessAI.load('bot.pckl')
             print(data)
         while main.running:
             main.update()
