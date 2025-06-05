@@ -61,39 +61,44 @@ class Randbot:
 
 
 
-class SimpleChessNet(nn.Module):
-    def __init__(self, input_size=65, hidden_size=128):
-        super(SimpleChessNet, self).__init__()
+class BetterChessNet(nn.Module):
+    def __init__(self, input_size=67, hidden_size=2048):
+        super().__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.out = nn.Linear(hidden_size, 1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
         return self.out(x)
 
 class ChessAI:
     def __init__(self, team, learning_rate=1e-3):
         self.team = team
-        self.model = SimpleChessNet()
+        self.model = BetterChessNet()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.loss_fn = nn.CrossEntropyLoss()
 
-    def encode_board(self, board):
+    def encode_input(self, board, move):
         board_tensor = torch.tensor(board, dtype=torch.float32)
         team_tensor = torch.tensor([self.team], dtype=torch.float32)
-        return torch.cat([board_tensor, team_tensor])
+        move_tensor = torch.tensor([
+            move.start / 63.0,
+            move.end / 63.0
+        ], dtype=torch.float32)
+        return torch.cat([board_tensor, team_tensor, move_tensor])
 
     def think(self, moves, board):
-        if moves is None or len(moves) == 0:
+        if not moves:
             return None
         self.model.eval()
-        board_encoding = self.encode_board(board)
         scores = []
 
         for move in moves:
-            move_tensor = board_encoding.clone()
-            score = self.model(move_tensor)
+            input_tensor = self.encode_input(board, move)
+            score = self.model(input_tensor)
             scores.append(score)
 
         scores_tensor = torch.cat(scores)
@@ -101,57 +106,41 @@ class ChessAI:
         return moves[best_index]
 
     def train(self, data, epochs=1):
-        """
-        Train the model with data: list of (board, legal_moves, correct_index).
-        board: list of 64 int
-        legal_moves: list of Move objects
-        correct_index: index of the best move from legal_moves
-        """
         self.model.train()
         for epoch in range(epochs):
             for board, moves, correct_index in data:
-                board_encoding = self.encode_board(board)
-                inputs = []
-
-                for move in moves:
-                    x = board_encoding.clone()
-                    inputs.append(x)
-
+                inputs = [self.encode_input(board, move) for move in moves]
                 input_tensor = torch.stack(inputs)
+
                 logits = self.model(input_tensor).squeeze()
                 target = torch.tensor([correct_index], dtype=torch.long)
 
                 loss = self.loss_fn(logits.unsqueeze(0), target)
-
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-    def save(self, filepath):
+    def save(self, filepath, extra_metadata=None):
+        save_data = {
+            'model_state': self.model.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'metadata': extra_metadata or {}
+        }
         with open(filepath, 'wb') as f:
-            pickle.dump({
-                'optimizer_state': self.optimizer.state_dict(),
-                'model_state': self.model.state_dict()
-            }, f)
-        print(f"Model saved to {filepath}")
+            pickle.dump(save_data, f)
+        print(f"AI saved to {filepath}")
 
     @classmethod
-    def load(self, filepath, learning_rate=1e-3, team=8):
+    def load(cls, filepath, learning_rate=1e-3, team=8):
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No file found at {filepath}")
-        
+
         with open(filepath, 'rb') as f:
             data = pickle.load(f)
-        
-        instance = self(learning_rate=learning_rate, team=team)
+
+        instance = cls(team=team, learning_rate=learning_rate)
         instance.model.load_state_dict(data['model_state'])
         instance.optimizer.load_state_dict(data['optimizer_state'])
         instance.model.eval()
-        print(f"Model loaded from {filepath}")
-        return instance
-    
-
-
-if __name__ == "__main__":
-    ai = ChessAI(team=8)
-    ai.save("model.pckl")
+        print(f"AI loaded from {filepath}")
+        return instance, data.get('metadata', {})
