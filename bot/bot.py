@@ -75,7 +75,7 @@ class NN(nn.Module):
         return self.out(x)
 
 class ChessAI:
-    def __init__(self, team, learning_rate=0.01):
+    def __init__(self, team, learning_rate=0.001):
         self.team = team
         self.model = NN()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)

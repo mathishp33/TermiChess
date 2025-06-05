@@ -32,7 +32,7 @@ class Application():
         if Player1 == 'RandBot':
             self.bot = bot.Randbot(8)
         elif Player1 == 'ChessAI':
-            self.bot = bot.ChessAI(8, 0.01)
+            self.bot = bot.ChessAI(8, 0.001)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
