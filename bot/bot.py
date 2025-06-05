@@ -61,7 +61,7 @@ class Randbot:
 
 
 
-class BetterChessNet(nn.Module):
+class NN(nn.Module):
     def __init__(self, input_size=67, hidden_size=2048):
         super().__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
@@ -75,21 +75,21 @@ class BetterChessNet(nn.Module):
         return self.out(x)
 
 class ChessAI:
-    def __init__(self, team, learning_rate=1e-3):
+    def __init__(self, team, learning_rate=0.01):
         self.team = team
-        self.model = BetterChessNet()
+        self.model = NN()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.loss_fn = nn.CrossEntropyLoss()
 
     def encode_input(self, board, move):
         board_tensor = torch.tensor(board, dtype=torch.float32)
-        team_tensor = torch.tensor([self.team], dtype=torch.float32)
+        team_tensor = torch.tensor([0.0 if self.team == 8 else 1.0], dtype=torch.float32)
         move_tensor = torch.tensor([
             move.start / 63.0,
             move.end / 63.0
         ], dtype=torch.float32)
         return torch.cat([board_tensor, team_tensor, move_tensor])
-
+    
     def think(self, moves, board):
         if not moves:
             return None
@@ -108,6 +108,10 @@ class ChessAI:
     def train(self, data, epochs=1):
         self.model.train()
         for epoch in range(epochs):
+            total_loss = 0.0
+            correct = 0
+            total = 0
+
             for board, moves, correct_index in data:
                 inputs = [self.encode_input(board, move) for move in moves]
                 input_tensor = torch.stack(inputs)
@@ -116,9 +120,21 @@ class ChessAI:
                 target = torch.tensor([correct_index], dtype=torch.long)
 
                 loss = self.loss_fn(logits.unsqueeze(0), target)
+
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+                total_loss += loss.item()
+
+                pred_index = torch.argmax(logits).item()
+                if pred_index == correct_index:
+                    correct += 1
+                total += 1
+
+            avg_loss = total_loss / total
+            accuracy = correct / total * 100
+            print(f"Epoch {epoch+1}/{epochs} - Loss: {avg_loss:.4f} - Accuracy: {accuracy:.2f}%")
 
     def save(self, filepath, extra_metadata=None):
         save_data = {

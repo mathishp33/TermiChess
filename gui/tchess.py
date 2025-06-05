@@ -126,11 +126,6 @@ def onKKeyPress(event: KeyPressEvent):
         print("Saving bot...")
         Application.current.bot.save('bot.pckl')
 
-# @event_listener
-# def onJKeyPress(event: KeyPressEvent):
-#     if event.key == pg.K_j:
-#         Applic
-
 def do_move(move: game.Move):
     g = game.Game.current
     if move in g.move_generator.moves:
@@ -138,7 +133,7 @@ def do_move(move: game.Move):
             if hasattr(Application.current.bot, 'train'):
                 moves = g.move_generator.moves
                 board = g.board.copy().tolist()
-                Application.current.bot.train([(board, moves, moves.index(move))])
+                Application.current.bot.train([(board, moves, moves.index(move))], 40)
         move.do()
         g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
         g.move_generator.update_moves(g.turn)
