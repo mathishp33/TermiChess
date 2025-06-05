@@ -62,7 +62,7 @@ class Randbot:
 
 
 class NN(nn.Module):
-    def __init__(self, input_size=67, hidden_size=2048):
+    def __init__(self, input_size=67, hidden_size=1024):
         super().__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -160,3 +160,9 @@ class ChessAI:
         instance.model.eval()
         print(f"AI loaded from {filepath}")
         return instance, data.get('metadata', {})
+    
+
+if __name__ == '__main__':
+    with open('bot.pckl', 'rb') as f:
+        bot, data = ChessAI.load('bot.pckl', 0.01, 8)
+        print(data)

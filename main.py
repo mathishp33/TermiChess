@@ -9,7 +9,7 @@ MODE = "GUI"
 
 if __name__ == '__main__':
     BOT = 'ChessAI' #RandBot, ChessAI, None
-    BOTMODE = 'create' #create, load
+    BOTMODE = 'load' #create, load
     if MODE == "GUI":
         import gui.tchess as gui
 

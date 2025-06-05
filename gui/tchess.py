@@ -121,10 +121,12 @@ def onEndDrag(event: MouseReleaseEvent):
         do_move(move)
         
 @event_listener
-def onKKeyPress(event: KeyPressEvent):
+def onKeyPress(event: KeyPressEvent):
     if event.key == pg.K_k:
         print("Saving bot...")
         Application.current.bot.save('bot.pckl')
+    if event.key == pg.K_LCTRL and event.key == pg.K_s:
+        pass
 
 def do_move(move: game.Move):
     g = game.Game.current
@@ -133,7 +135,7 @@ def do_move(move: game.Move):
             if hasattr(Application.current.bot, 'train'):
                 moves = g.move_generator.moves
                 board = g.board.copy().tolist()
-                Application.current.bot.train([(board, moves, moves.index(move))], 40)
+                Application.current.bot.train([(board, moves, moves.index(move))], 10)
         move.do()
         g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
         g.move_generator.update_moves(g.turn)
