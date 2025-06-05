@@ -8,9 +8,15 @@ MODE = "GUI"
 
 
 if __name__ == '__main__':
+    BOT = 'ChessAI' #RandBot, ChessAI, None
+    BOTMODE = 'load' #create, load
     if MODE == "GUI":
         import gui.tchess as gui
-        main = gui.Application('RandBot', 'None') #white and black 
+
+        main = gui.Application(BOT, 'None') #white and black 
+        if BOTMODE == 'load':
+            import bot.bot as bot
+            main.bot = bot.ChessAI.load('bot.pckl', 0.01, 8)
         while main.running:
             main.update()
     elif MODE == "TERMINAL":

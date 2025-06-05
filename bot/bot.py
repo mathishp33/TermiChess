@@ -54,7 +54,7 @@ class Randbot:
     def __init__(self, team: int):
         self.team = team
 
-    def think(self, moves):
+    def think(self, moves, board):
         return random.choice(moves)
                 
 
@@ -79,14 +79,14 @@ class ChessAI:
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.loss_fn = nn.CrossEntropyLoss()
 
-        self.load("model.pckl")
-
     def encode_board(self, board):
         board_tensor = torch.tensor(board, dtype=torch.float32)
         team_tensor = torch.tensor([self.team], dtype=torch.float32)
         return torch.cat([board_tensor, team_tensor])
 
     def think(self, moves, board):
+        if moves is None or len(moves) == 0:
+            return None
         self.model.eval()
         board_encoding = self.encode_board(board)
         scores = []
@@ -136,14 +136,14 @@ class ChessAI:
         print(f"Model saved to {filepath}")
 
     @classmethod
-    def load(self, filepath, learning_rate=1e-3):
+    def load(self, filepath, learning_rate=1e-3, team=8):
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"No file found at {filepath}")
         
         with open(filepath, 'rb') as f:
             data = pickle.load(f)
         
-        instance = self(learning_rate=learning_rate)
+        instance = self(learning_rate=learning_rate, team=team)
         instance.model.load_state_dict(data['model_state'])
         instance.optimizer.load_state_dict(data['optimizer_state'])
         instance.model.eval()

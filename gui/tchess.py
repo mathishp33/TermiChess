@@ -16,7 +16,7 @@ class Application():
         self.screen = pg.display.set_mode(self.RES)
         self.clock = pg.time.Clock()
         pg.init()
-        self.FPS = 120
+        self.FPS = 180
         self.running = True
         self.clicking = False
         self.game = game.Game("GUI")
@@ -31,8 +31,8 @@ class Application():
 
         if Player1 == 'RandBot':
             self.bot = bot.Randbot(8)
-        elif Player1 == 'DumbyBot':
-            self.bot = bot.DumbyBot(8)
+        elif Player1 == 'ChessAI':
+            self.bot = bot.ChessAI(8, 0.01)
 
     def get_piece_at(self, pos: tuple[int, int]):
         x = int(pos[0]/64)
@@ -120,16 +120,30 @@ def onEndDrag(event: MouseReleaseEvent):
         move = game.Move(utils.position_to_index(Application.current.dragState["dragStart"]), utils.position_to_index(pos))
         do_move(move)
         
+@event_listener
+def onKKeyPress(event: KeyPressEvent):
+    if event.key == pg.K_k:
+        print("Saving bot...")
+        Application.current.bot.save('bot.pckl')
+
+# @event_listener
+# def onJKeyPress(event: KeyPressEvent):
+#     if event.key == pg.K_j:
+#         Applic
 
 def do_move(move: game.Move):
     g = game.Game.current
     if move in g.move_generator.moves:
+        if g.turn != Application.current.bot.team:
+            if hasattr(Application.current.bot, 'train'):
+                moves = g.move_generator.moves
+                board = g.board.copy().tolist()
+                Application.current.bot.train([(board, moves, moves.index(move))])
         move.do()
         g.turn = game.BLACK if g.turn == game.WHITE else game.WHITE
         g.move_generator.update_moves(g.turn)
         g.moves.append(move)
         g.move += 1
         if g.turn == Application.current.bot.team:
-            to_play = Application.current.bot.think(g.move_generator.moves)
+            to_play = Application.current.bot.think(g.move_generator.moves, g.board)
             do_move(to_play)
-            
