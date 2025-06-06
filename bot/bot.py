@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.optim as optim
 import pickle
 import os
-from training_data import Move
 
 
 class Randbot:
@@ -187,6 +186,7 @@ class ChessAI:
         return instance, data.get('metadata', {})
     
 if __name__ == '__main__':
+    from training_data import Move #may cause error, if so, place it at line 1
     method = 'load' #load, create
     if method == 'load':
         bot, metadata = ChessAI.load('bot.pckl')
