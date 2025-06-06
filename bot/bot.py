@@ -13,11 +13,6 @@ class Randbot:
 
     def think(self, moves, board):
         return random.choice(moves)
-                
-
-#teams (int) : 
-# 8: white
-# 16: black
 
 
 KING   = 0b00001
@@ -36,22 +31,15 @@ def encode_square(piece_int):
     piece_int = int(piece_int)
     if piece_int == 0:
         return np.zeros(8, dtype=np.float32)
-    
-    if (piece_int & WHITE) == WHITE:
-        team = [1, 0]
-    elif (piece_int & BLACK) == BLACK:
-        team = [0, 1]
-    else:
-        team = [0, 0]
 
+    team = [1, 0] if (piece_int & WHITE) == WHITE else [0, 1] if (piece_int & BLACK) == BLACK else [0, 0]
     piece_type = piece_int & 0b00111
     piece_onehot = [1 if piece_type == pt else 0 for pt in PIECE_TYPES]
 
     return np.array(team + piece_onehot, dtype=np.float32)
 
 def encode_board(board_int_list):
-    encoded = [encode_square(p) for p in board_int_list]
-    return np.concatenate(encoded)
+    return np.concatenate([encode_square(p) for p in board_int_list])
 
 def encode_piece_type(piece_int):
     piece_int = int(piece_int)
@@ -61,60 +49,42 @@ def encode_piece_type(piece_int):
     return np.array([1 if piece_type == pt else 0 for pt in PIECE_TYPES], dtype=np.float32)
 
 class NN(nn.Module):
-    def __init__(self, input_size=521, hidden_size=768, dropout_p=0.1, activation='leakyrelu'):
+    def __init__(self, input_size=521, hidden_size=1024, num_layers=6, dropout_p=0.2):
         super().__init__()
-
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.bn1 = nn.LayerNorm(hidden_size)
-
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.bn2 = nn.LayerNorm(hidden_size)
-
-        self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.LayerNorm(hidden_size)
-
+        self.input_fc = nn.Linear(input_size, hidden_size)
+        self.layers = nn.ModuleList([
+            nn.Linear(hidden_size, hidden_size) for _ in range(num_layers)
+        ])
+        self.norms = nn.ModuleList([
+            nn.LayerNorm(hidden_size) for _ in range(num_layers)
+        ])
         self.out = nn.Linear(hidden_size, 1)
-
+        self.act = nn.GELU()
         self.dropout = nn.Dropout(dropout_p)
 
-        if activation == 'gelu':
-            self.act = nn.GELU()
-        elif activation == 'relu':
-            self.act = nn.ReLU()
-        else:
-            self.act = nn.LeakyReLU(0.1)
-
-        self._init_weights()
-
-    def _init_weights(self):
-        for layer in [self.fc1, self.fc2, self.fc3, self.out]:
-            nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
-            nn.init.constant_(layer.bias, 0)
-
     def forward(self, x):
-        x1 = self.dropout(self.act(self.bn1(self.fc1(x))))
-        x2 = self.dropout(self.act(self.bn2(self.fc2(x1))))
-        x3 = self.dropout(self.act(self.bn3(self.fc3(x2 + x1))))
-        out = self.out(x3).squeeze(-1)
-        return out
+        x = self.act(self.input_fc(x))
+        for layer, norm in zip(self.layers, self.norms):
+            residual = x
+            x = self.act(norm(layer(x)))
+            x = self.dropout(x)
+            x = x + residual
+        return self.out(x).squeeze(-1)
 
 class ChessAI:
-    def __init__(self, team=8, learning_rate=1e-4):
+    def __init__(self, team=8, learning_rate=1e-3):
         self.team = team
-        self.should_train = False
         self.input_size = 521
         self.model = NN(input_size=self.input_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.loss_fn = nn.CrossEntropyLoss()
+        self.should_train = False
 
     def encode_input(self, board, move):
         board_vec = torch.tensor(encode_board(board), dtype=torch.float32)
         team_tensor = torch.tensor([0.0 if self.team == 8 else 1.0], dtype=torch.float32)
         move_tensor = torch.tensor([move.start / 63.0, move.end / 63.0], dtype=torch.float32)
-
-        moving_piece_int = board[move.start]
-        piece_type_vec = torch.tensor(encode_piece_type(moving_piece_int), dtype=torch.float32)
-
+        piece_type_vec = torch.tensor(encode_piece_type(board[move.start]), dtype=torch.float32)
         return torch.cat([board_vec, team_tensor, move_tensor, piece_type_vec])
 
     def think(self, moves, board):
@@ -129,36 +99,24 @@ class ChessAI:
 
     def train(self, data, epochs=1):
         self.model.train()
-        for epoch in range(epochs):
-            total_loss = 0.0
-            correct = 0
-            total = 0
-
+        total_loss = 0
+        total = 0
+        for _ in range(epochs):
             for board, moves, correct_index in data:
-                inputs = [self.encode_input(board, move) for move in moves]
-                input_tensor = torch.stack(inputs)
-
-                logits = self.model(input_tensor)
-                logits = logits.unsqueeze(0)
-
+                input_tensor = torch.stack([self.encode_input(board, move) for move in moves])
+                logits = self.model(input_tensor).unsqueeze(0)
                 target = torch.tensor([correct_index], dtype=torch.long)
 
                 loss = self.loss_fn(logits, target)
-
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
                 total_loss += loss.item()
-
-                pred_index = torch.argmax(logits).item()
-                if pred_index == correct_index:
-                    correct += 1
                 total += 1
 
-            avg_loss = total_loss / total
-            accuracy = correct / total * 100
-            print(f"Epoch {epoch+1}/{epochs} - Loss: {avg_loss:.4f} - Accuracy: {accuracy:.2f}%")
+        avg_loss = total_loss / total if total > 0 else 0
+        print(f"Loss: {avg_loss:.4f}")
 
     def save(self, filepath, extra_metadata=None):
         save_data = {
@@ -184,10 +142,11 @@ class ChessAI:
         instance.model.eval()
         print(f"AI loaded from {filepath}")
         return instance, data.get('metadata', {})
-    
+
 if __name__ == '__main__':
-    from training_data import Move #may cause error, if so, place it at line 1
-    method = 'load' #load, create
+    from training_data import Move
+
+    method = 'load' #load or create
     if method == 'load':
         bot, metadata = ChessAI.load('bot.pckl')
         print(metadata)
@@ -196,8 +155,11 @@ if __name__ == '__main__':
 
     with open('training_data.pckl', 'rb') as f:
         data = pickle.load(f)
-    for i, j in enumerate(data):
-        epochs = 10
-        bot.train([j], epochs)
-    
+
+    for i, sample in enumerate(data):
+        bot.train([sample], epochs=5)
+        if i % 50 == 0:
+            bot.save('bot.pckl')
+            print(f"Progress: {i} / {len(data)}")
+
     bot.save('bot.pckl')

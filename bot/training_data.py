@@ -79,5 +79,5 @@ def save_data(data, filepath="training_data.pckl"):
     print(f"Saved {len(data)} samples to {filepath}")
 
 if __name__ == "__main__":
-    data = collect_training_data(num_games=20, max_samples=2000)
+    data = collect_training_data(num_games=100, max_samples=100000)
     save_data(data)
