@@ -1,10 +1,10 @@
 import pygame as pg
 from pygame.locals import *
-import chess.game as game
+import tchess.game as game
 import gui.events.event as event
 from gui.events.mouse_events import *
 from gui.events.keyboard_events import *
-import chess.utils as utils
+import tchess.utils as utils
 import bot.bot as bot
 
 class Application():
@@ -132,7 +132,7 @@ def do_move(move: game.Move):
     g = game.Game.current
     if move in g.move_generator.moves:
         if g.turn != Application.current.bot.team:
-            if hasattr(Application.current.bot, 'train'):
+            if hasattr(Application.current.bot, 'train') and Application.current.bot.should_train:
                 moves = g.move_generator.moves
                 board = g.board.copy()
                 Application.current.bot.train([(board, moves, moves.index(move))], 10)

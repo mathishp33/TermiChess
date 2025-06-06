@@ -1,11 +1,11 @@
 import numpy as np
 import random
-import chess.game as game
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import pickle
 import os
+from training_data import Move
 
 
 class Randbot:
@@ -20,34 +20,6 @@ class Randbot:
 # 8: white
 # 16: black
 
-
-class NN(nn.Module):
-    def __init__(self, input_size=67, hidden_size=1024, dropout_p=0.3):
-        super().__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.bn1 = nn.BatchNorm1d(hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.bn2 = nn.BatchNorm1d(hidden_size)
-        self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.fc4 = nn.Linear(hidden_size, hidden_size)
-        self.bn4 = nn.BatchNorm1d(hidden_size)
-        self.out = nn.Linear(hidden_size, 1)
-
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(dropout_p)
-
-    def forward(self, x):
-        x = self.relu(self.bn1(self.fc1(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn2(self.fc2(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn3(self.fc3(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn4(self.fc4(x)))
-        x = self.dropout(x)
-        x = self.out(x).squeeze(-1)
-        return x
 
 KING   = 0b00001
 QUEEN  = 0b00010
@@ -90,36 +62,47 @@ def encode_piece_type(piece_int):
     return np.array([1 if piece_type == pt else 0 for pt in PIECE_TYPES], dtype=np.float32)
 
 class NN(nn.Module):
-    def __init__(self, input_size=521, hidden_size=1024, dropout_p=0.3):
+    def __init__(self, input_size=521, hidden_size=768, dropout_p=0.1, activation='leakyrelu'):
         super().__init__()
+
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.bn1 = nn.BatchNorm1d(hidden_size)
+        self.bn1 = nn.LayerNorm(hidden_size)
+
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.bn2 = nn.BatchNorm1d(hidden_size)
+        self.bn2 = nn.LayerNorm(hidden_size)
+
         self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.fc4 = nn.Linear(hidden_size, hidden_size)
-        self.bn4 = nn.BatchNorm1d(hidden_size)
+        self.bn3 = nn.LayerNorm(hidden_size)
+
         self.out = nn.Linear(hidden_size, 1)
 
-        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout_p)
 
+        if activation == 'gelu':
+            self.act = nn.GELU()
+        elif activation == 'relu':
+            self.act = nn.ReLU()
+        else:
+            self.act = nn.LeakyReLU(0.1)
+
+        self._init_weights()
+
+    def _init_weights(self):
+        for layer in [self.fc1, self.fc2, self.fc3, self.out]:
+            nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
+            nn.init.constant_(layer.bias, 0)
+
     def forward(self, x):
-        x = self.relu(self.bn1(self.fc1(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn2(self.fc2(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn3(self.fc3(x)))
-        x = self.dropout(x)
-        x = self.relu(self.bn4(self.fc4(x)))
-        x = self.dropout(x)
-        x = self.out(x).squeeze(-1)
-        return x
+        x1 = self.dropout(self.act(self.bn1(self.fc1(x))))
+        x2 = self.dropout(self.act(self.bn2(self.fc2(x1))))
+        x3 = self.dropout(self.act(self.bn3(self.fc3(x2 + x1))))
+        out = self.out(x3).squeeze(-1)
+        return out
 
 class ChessAI:
-    def __init__(self, team, learning_rate=1e-4):
+    def __init__(self, team=8, learning_rate=1e-4):
         self.team = team
+        self.should_train = False
         self.input_size = 521
         self.model = NN(input_size=self.input_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -202,3 +185,19 @@ class ChessAI:
         instance.model.eval()
         print(f"AI loaded from {filepath}")
         return instance, data.get('metadata', {})
+    
+if __name__ == '__main__':
+    method = 'load' #load, create
+    if method == 'load':
+        bot, metadata = ChessAI.load('bot.pckl')
+        print(metadata)
+    else:
+        bot = ChessAI()
+
+    with open('training_data.pckl', 'rb') as f:
+        data = pickle.load(f)
+    for i, j in enumerate(data):
+        epochs = 10
+        bot.train([j], epochs)
+    
+    bot.save('bot.pckl')
